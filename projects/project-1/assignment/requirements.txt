@@ -1,0 +1,5 @@
+rdflib
+SPARQLWrapper
+pyshacl
+pytest
+

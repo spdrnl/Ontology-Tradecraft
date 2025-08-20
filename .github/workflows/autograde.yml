@@ -1,0 +1,24 @@
+name: Autograde Week 1
+
+on: [push, pull_request]
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - name: Run notebook (optional)
+        run: |
+          if [ -f notebooks/env-report.ipynb ]; then
+            python -m nbclient notebooks/env-report.ipynb
+          fi
+
+      - name: Run tests
+        run: pytest -q
