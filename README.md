@@ -30,6 +30,10 @@
 
 * **Week 15** [Student Presentations]()
 
+## Meeting Time
+
+In person 1-3:50 on Mondays. Zoom for attending remotely is here (https://buffalo.zoom.us/j/9795922981?pwd=RGVGSTNvQ3BDNjUvTERaU1hobXduUT09).
+
 ## Extra Content
 
   - [MOWL Tutorial](https://github.com/bio-ontology-research-group/MOWL)
