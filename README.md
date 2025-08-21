@@ -1,49 +1,37 @@
 # Ontology Tradecraft
 
-* **Week 1**
-  - [Course Introduction & Tooling Setup]() - Course structure, VS Code, GitHub, rdflib, Jupyter
+Week 11 LLMs in Ontology Engineering 1- Prompting for ontology building, SPARQL generation, LLM risk analysis
+Week 12 LLMs in Ontology Engineering 2- LLM risk analysis, evaluating logic and the boundaries of use
 
-* **Week 2**
-  - [Ontology Engineering Methodology]() - Competency questions, hub-and-spoke, reuse, design patterns
+* **Week 1** [Course Introduction & Tooling Setup]() - Course structure, VS Code, GitHub, rdflib, Jupyter
 
-* **Week 3**
-  - [Semantic Enrichment of Raw Data]() - RDF serialization, RDFS hierarchy, Linked Data best practices
+* **Week 2** [Ontology Engineering Methodology]() - Competency questions, hub-and-spoke, reuse, design patterns
 
-* **Week 4**
-  - [SPARQL for Querying]() - SPARQL in Jupyter
+* **Week 3** [Semantic Enrichment of Raw Data]() - RDF & Linked Data best practices
 
-* **Week 5**
-  - [OWL2 Reasoning]() - OWL2 profiles, reasoning, reasoners (HermiT, Pellet, ELK)
+* **Week 4** [SPARQL for Querying]() - SPARQL in Jupyter
 
-* **Week 6**
-  - [SHACL Validation]() - SHACL basics, node and property shapes, constraint definitions
+* **Week 5** [OWL2 Reasoning]() - OWL2 profiles, reasoning, reasoners (HermiT, Pellet, ELK), Jupyter
 
-* **Week 7**
-  - [Data Integration with Ontologies]() - ETL from legacy data, R2RML & OpenRefine, Ontop, SQL vs SPARQL
+* **Week 6** [SHACL Validation]() - SHACL basics, node and property shapes, constraint definitions, Jupyter
 
-* **Week 8**
-  - [Midterm Project: ETL + Validation]() - RDF generation from CSVs, SHACL shape creation, OWL reasoning
+* **Week 7** [Data Integration with Ontologies]() - ETL, R2RML & OpenRefine, Ontop, SQL vs SPARQL
 
-* **Week 9**
-  - [Knowledge Graph Design]() - Designing KGs for real-world use, linking ontologies
+* **Week 8** [Midterm Project: ETL + Validation]() - Bringing it all together in a pipeline
 
-* **Week 10**
-  - [Ontology Embeddings with MOWL]() - Embeddings and semantic similarity
+* **Week 9** [ML Applications in Ontology Engineering]() - Link prediction, classification, evaluation of ontology-based ML
 
-* **Week 11**
-  - [ML Applications in Ontology Engineering]() - Link prediction, classification, evaluation of ontology-based ML
+* **Week 10** [Ontology Embeddings with MOWL]() - Embeddings and semantic similarity
 
-* **Week 12**
-  - [LLMs in Ontology Engineering]() - Prompting for ontology building, SPARQL generation, LLM risk analysis
+* **Week 11** [LLMs in Ontology Engineering 1]() - Prompting for ontology building, SPARQL generation, LLM risk analysis
 
-* **Week 13**
-  - [Semantic Pipelines]() - Integrating ontologies in enterprise systems; case studies from healthcare, defense, logistics
+* **Week 12** [LLMs in Ontology Engineering 2]() - LLM risk analysis, evaluating logic and the boundaries of use
 
-* **Week 14**
-  - [Student Presentations]()
+* **Week 13** [Semantic Pipelines]() - Integrating ontologies in enterprise systems
 
-* **Week 15**
-  - [Student Presentations]()
+* **Week 14** [Student Presentations]()
+
+* **Week 15** [Student Presentations]()
 
 ## Extra Content
 
