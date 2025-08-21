@@ -1,4 +1,4 @@
-# Week 4 Project: Integration Pipeline
+# Week 6 Project: Large-Language Models
 
 ## Learning Objectives
 

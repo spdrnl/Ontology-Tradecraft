@@ -1,4 +1,4 @@
-# Week 3 Project
+# Week 3 Project: Targeted and Global Reasoning
 
 ## Learning Objectives
 
