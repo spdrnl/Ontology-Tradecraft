@@ -1,8 +1,5 @@
 # Ontology Tradecraft
 
-Week 11 LLMs in Ontology Engineering 1- Prompting for ontology building, SPARQL generation, LLM risk analysis
-Week 12 LLMs in Ontology Engineering 2- LLM risk analysis, evaluating logic and the boundaries of use
-
 * **Week 1** [Course Introduction & Tooling Setup]() - Course structure, VS Code, GitHub, rdflib, Jupyter
 
 * **Week 2** [Ontology Engineering Methodology]() - Competency questions, hub-and-spoke, reuse, design patterns
