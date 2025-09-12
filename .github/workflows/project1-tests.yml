@@ -59,7 +59,9 @@ jobs:
             nb = nbformat.read('notebooks/env-report.ipynb', as_version=4)
             NotebookClient(nb, timeout=300, kernel_name='python3').execute()
             print("Notebook executed successfully.")
-        run: python -c "$PYCODE"
+        run: |
+          python -m pip install --quiet nbclient nbformat
+          python -c "$PYCODE"
 
       - name: Run tests
         run: pytest -q
