@@ -50,18 +50,16 @@ jobs:
           fi
 
       - name: Execute env-report notebook (optional)
-        run: |
-          if [ -f notebooks/env-report.ipynb ]; then
-            python - <<'PY'
+        if: hashFiles('projects/project-1/assignment/notebooks/env-report.ipynb') != ''
+        working-directory: projects/project-1/assignment
+        env:
+          PYCODE: |
             import nbformat
             from nbclient import NotebookClient
             nb = nbformat.read('notebooks/env-report.ipynb', as_version=4)
             NotebookClient(nb, timeout=300, kernel_name='python3').execute()
             print("Notebook executed successfully.")
-            PY
-          else
-            echo "No env-report.ipynb found; skipping."
-          fi
+        run: python -c "$PYCODE"
 
       - name: Run tests
         run: pytest -q
