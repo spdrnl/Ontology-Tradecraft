@@ -1,6 +1,6 @@
 # Ontology Tradecraft
 
-* **Week 1** [Course Introduction & Tooling Setup]() - Course structure, VS Code, GitHub, rdflib, Jupyter
+* **Week 1** [Course Introduction & Tooling Setup](https://www.youtube.com/watch?v=ia8dkizLzfY) - Course structure, VS Code, GitHub, rdflib, Jupyter
 
 * **Week 2** [Ontology Engineering Methodology]() - Competency questions, hub-and-spoke, reuse, design patterns
 
