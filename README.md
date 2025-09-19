@@ -4,11 +4,11 @@
 
 * **Week 2** [Ontology Engineering Methodology]() - Competency questions, hub-and-spoke, reuse, design patterns
 
-* **Week 3** [Semantic Enrichment of Raw Data]() - RDF & Linked Data best practices
+* **Week 3** [Semantic Enrichment of Raw Data](https://www.youtube.com/watch?v=jQbXhtJhs4E&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=2) - RDF, Extensions, & Linked Data Best Practices
 
 * **Week 4** [SPARQL for Querying]() - SPARQL in Jupyter
 
-* **Week 5** [OWL2 Reasoning]() - OWL2 profiles, reasoning, reasoners (HermiT, Pellet, ELK), Jupyter
+* **Week 5** [OWL2 Reasoning]() - OWL2 reasoning, reasoners (HermiT, ELK), ROBOT, Jupyter
 
 * **Week 6** [SHACL Validation]() - SHACL basics, node and property shapes, constraint definitions, Jupyter
 
