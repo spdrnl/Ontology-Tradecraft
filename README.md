@@ -4,7 +4,7 @@
 
 * **Week 2** [Ontology Engineering Methodolog](https://www.youtube.com/watch?v=eQzBrRKe68E) - Competency questions, hub-and-spoke, reuse, design patterns
   - [Top-Down Modeling using Basic Formal Ontology](https://www.youtube.com/watch?v=eQzBrRKe68E)
-  - [Challenging Modeling Exercises & Solutions]()
+  - [Challenging Modeling Exercises & Solutions](https://www.youtube.com/watch?v=rXEsc0dDdsA)
 
 * **Week 3** [Semantic Enrichment of Raw Data](https://www.youtube.com/watch?v=jQbXhtJhs4E&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=2) - RDF, RDFs, OWL, & Linked Data Best Practices
 
@@ -12,7 +12,7 @@
 
 * **Week 5** [OWL2 Reasoning](https://www.youtube.com/watch?v=5Ae5FNqk6ro&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=3) - OWL2 reasoning, reasoners (HermiT, ELK), ROBOT, Jupyter
 
-* **Week 6** [SHACL Validation]() - SHACL basics, node and property shapes, constraint definitions, Jupyter
+* **Week 6** [SHACL Validation](https://www.youtube.com/watch?v=alVaKWmiqtU&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=9) - SHACL basics, node and property shapes, constraint definitions, Jupyter
 
 * **Week 7** [Data Integration with Ontologies]() - ETL, R2RML & OpenRefine, Ontop, SQL vs SPARQL
 
