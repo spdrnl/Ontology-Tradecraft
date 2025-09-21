@@ -101,40 +101,65 @@ By the end of this project, students will be able to:
    - Do not change the files names for your augmented ontology files, e.g. `bfo-core.ttl` should remain the file name and remain in the `src` directory
 
 8. **Repeat**
-  - Return to step 2 and run your `class-axiom-generator.ipynb` scripts again replacing your existing `ontology abbreviation-axioms.xlsx` file with an updated version with the same name
-  - Successfully run `compare_structures.py` again and then replace in the `data/` directory your file named following the convention: `ontologyabbreviation1-ontologyabbreviation2-structural-matches.xlsx`; keep the same name
-  - Repeat step 4 and replace your `bfo-mapping.ttl` / `ies-mapping.ttl`, `ccom-mapping.ttl` / `qudt-mapping.ttl`, `ccot-mapping.ttl` / `to-mapping.ttl` stored in `data/` with files updated based on your richer axiom sets
-  - Successfully execute the `reasoner_run.ipynb` notebook to run **HermiT** and **ELK** against your files, checking for: consistency, inferred equivalences/subclasses, and differences across reasoners
+   - Return to step 2 and run your `class-axiom-generator.ipynb` scripts again replacing your existing `ontology abbreviation-axioms.xlsx` file with an updated version with the same name
+   - Successfully run `compare_structures.py` again and then replace in the `data/` directory your file named following the convention: `ontologyabbreviation1-ontologyabbreviation2-structural-matches.xlsx`; keep the same name
+   - Repeat step 4 and replace your `bfo-mapping.ttl` / `ies-mapping.ttl`, `ccom-mapping.ttl` / `qudt-mapping.ttl`, `ccot-mapping.ttl` / `to-mapping.ttl` stored in `data/` with files updated based on your richer axiom sets
+   - Successfully execute the `reasoner_run.ipynb` notebook to run **HermiT** and **ELK** against your files, checking for: consistency, inferred equivalences/subclasses, and differences across reasoners
 
-# Rubric (100 pts)
+## Rubric (100 pts)
 
-## SPARQL Exports: IRIs & Labels (15 pts)
+### SPARQL Exports: IRIs & Labels (15 pts)
 
 - **(10 pts)** Each ontology (BFO, IES, CCOM, QUDT, CCOT, TO) has a `*-class.xlsx` containing at least one column of IRIs and one column of labels.  
 - **(5 pts)** Files open without error; no obviously empty exports (≥10 rows total across all exports).  
 
-## SPARQL Exports: IRIs, Labels & Axioms (20 pts)
+### SPARQL Exports: IRIs, Labels & Axioms (20 pts)
 
 - **(15 pts)** Each ontology has a `*-axioms.xlsx` with at least IRI and axiom(s) columns.  
 - **(5 pts)** No deprecated classes included (evidence: no rows with labels containing “deprecated” or axioms containing `owl:deprecated "true"`).  
 
-## Structural Matching Outputs (15 pts)
+### Structural Matching Outputs (15 pts)
 
 - **(15 pts)** For each pair (BFO–IES, CCOM–QUDT, CCOT–TO), a file named `data/{pair}-structural-matches.xlsx` or the reverse pair name exists. Each file has two IRI columns (any reasonable naming that includes “iri”) and ≥1 row.  
 
-## Definitions Augmentation (20 pts)
+### Definitions Augmentation (20 pts)
 
 - **(20 pts)** For each pair (BFO–IES, CCOM–QUDT, CCOT–TO), a `*-structural-matches-with-definitions.xlsx` exists with both left and right definition columns present and at least some non-empty values.  
 
-## OWL Enrichment (20 pts)
+### OWL Enrichment (20 pts)
 
 - **(15 pts)** If any of `data/bfo-mapping.ttl`, `data/ies-mapping.ttl`, `data/ccom-mapping.ttl`, `data/qudt-mapping.ttl`, `data/ccot-mapping.ttl`, `data/to-mapping.ttl` exist, they parse and contain at least one `owl:equivalentClass` or `rdfs:subClassOf` triple.  
 - **(5 pts)** Core ontology TTLs in `assignment/src/` still parse after enrichment.  
 
-## Reproducibility & Organization (10 pts)
+### Reproducibility & Organization (10 pts)
 
 - **(5 pts)** Files are in the documented locations/names (`assignment/src/`, `assignment/src/data/`, notebook folder).  
 - **(5 pts)** Required notebooks exist (`week5_project.ipynb`, `reasoner_run.ipynb`, `augment_w_definitions.ipynb`). (Execution is not autograded—presence only.)  
+
+## Testing your Work
+We will leverage GitHub Actions to automate the grading for projects. There will accordingly be `*-tests.yml` files under the `.github/workflows directory`. These files provide instructions for when tests within each project should run against your submissions. There is a trigger, for example, such that when you open a pull request to the class repository, tests will run againsts your pull request submission. The portion of the yml file that determines triggers for project 1 in `project3-tests.yml` looks like this: 
+```
+on:
+  pull_request:
+    paths:
+      - "projects/project-3/**"
+      - ".github/workflows/project3-tests.yml"
+```
+The block that starts with "pull_request" says on a pull request to my repository run the yml instructions that follow. 
+
+I suspect you will want to test your work before you submit it to me though. If that is the case, then you will want to include another trigger that runs when you push updates to your own repository. To make that happen, you will need to update the yml file you have on your repository so it looks like: 
+```
+on:
+  pull_request:
+    paths:
+      - "projects/project-3/**"
+      - ".github/workflows/project3-tests.yml"
+  push:
+    paths:
+      - "projects/project-3/**"
+      - ".github/workflows/project3-tests.yml"
+```
+This additional block that starts with "push" says that on a push to your repository, run the yml instructions that follow. 
 
 ## compare_structures/py Help
 
