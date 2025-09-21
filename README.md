@@ -10,6 +10,7 @@
 * **Week 3** [Semantic Enrichment of Raw Data](https://www.youtube.com/watch?v=jQbXhtJhs4E&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=2) - RDF, RDFs, OWL, & Linked Data Best Practices
 
 * **Week 4** [SPARQL for Querying](https://youtu.be/8Dd2jmw6yzc?list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&t=1917) - The Protocol Language SPARQL
+  - [ROBOT Tutorial - James Overton & Becky Jackson](https://ontodev.github.io/robot-tutorial/#/title-slide)
   - [Due: Project 2 - Modeling Bottlenecks](projects/project-2/README.md)
 
 * **Week 5** [OWL2 Reasoning](https://www.youtube.com/watch?v=5Ae5FNqk6ro&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=3) - OWL2 reasoning, reasoners (HermiT, ELK), ROBOT, Jupyter
