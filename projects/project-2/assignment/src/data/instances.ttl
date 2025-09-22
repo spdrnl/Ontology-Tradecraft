@@ -66,22 +66,25 @@ data:Jet_Engine_2
 # Particulars
 #################################################################
 
-data:Measurement_Unit_of_Knots
-    rdf:type   owl:NamedIndividual, cco:ont00000120 ;
-    rdfs:label "Measurement Unit of Knots" .
-
-data:Prescribed_Average_Maximum_Knot_Approach_Speed_IBE
-    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
-    rdfs:label "Prescribed Average Maximum Knot Approach Speed IBE" .
-
-data:Prescribed_Average_Maximum_Knot_Approach_Speed_of_139
-    rdf:type        owl:NamedIndividual, model:Prescribed_Average_Maximum_Knot_Approach_Speed ;
-    cco:ont00001942 data:Airbus_A321-111 ;
-    rdfs:label      "Prescribed Average Maximum Knot Approach Speed of 139" .
-
 data:Airbus_A321-111
     rdf:type   owl:NamedIndividual, model:Fixed_Wing ;
     rdfs:label "Airbus A321-111" .
+
+data:Measurement_Unit_of_Knots
+    rdf:type   owl:NamedIndividual, cco:ont00000120 ;
+    cco:ont00001961 data:record_3 ;
+    rdfs:label "Measurement Unit of Knots" .
+
+data:Prescribed_Maximum_Knot_Approach_Speed_of_142
+    rdf:type        owl:NamedIndividual, model:Prescribed_Maximum_Knot_Approach_Speed ;
+    cco:ont00001942 data:Airbus_A321-111 ;
+    bfo:BFO_0000084 data:record_3 ;
+    rdfs:label      "Prescribed Maximum Knot Approach Speed of 142" .
+
+data:record_3
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    model:has_measurement_value "142"^^xsd:decimal ;
+    rdfs:label "Prescribed Average Maximum Knot Approach Speed IBE" .
 
 data:Test_Process_overall
     rdf:type   owl:NamedIndividual, model:Test_Process ;
@@ -90,26 +93,31 @@ data:Test_Process_overall
 data:Test_sub-process_1
     rdf:type                  owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of data:Test_Process_overall ;
+    model:has_measurement_value           "139"^^xsd:decimal ;
     rdfs:label                "Test sub-process 1" .
 
 data:Test_sub-process_2
     rdf:type                  owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of data:Test_Process_overall ;
+    model:has_measurement_value           "139"^^xsd:decimal ;
     rdfs:label                "Test sub-process 2" .
 
 data:Test_sub-process_3
     rdf:type                  owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of data:Test_Process_overall ;
+    model:has_measurement_value           "139"^^xsd:decimal ;
     rdfs:label                "Test sub-process 3" .
 
 data:Test_sub-process_4
     rdf:type                  owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of data:Test_Process_overall ;
+    model:has_measurement_value           "139"^^xsd:decimal ;
     rdfs:label                "Test sub-process 4" .
 
 data:Test_sub-process_5
     rdf:type                  owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of data:Test_Process_overall ;
+    model:has_measurement_value           "139"^^xsd:decimal ;
     rdfs:label                "Test sub-process 5" .
 
 #################################################################
@@ -118,30 +126,44 @@ data:Test_sub-process_5
 
 # Particulars
 #################################################################
-
-data:Act_of_aircraft_processing_1
-    rdf:type   owl:NamedIndividual, model:Act_of_Aircraft_Processing ;
-    rdfs:label "Act of aircraft processing 1" .
-
-data:Adaptability_evaluation_1
-    rdf:type   owl:NamedIndividual, model:Adaptability_Evaluation ;
-    rdfs:label "Adaptability evaluation 1" .
-
-data:Artifact_design_1
+data:Artifact_design
     rdf:type   owl:NamedIndividual, cco:ont00000319 ;
-    rdfs:label "Artifact design 1" .
+    rdfs:label "Artifact design" .
+
+data:Adaptability_evaluation
+    rdf:type   owl:NamedIndividual, model:Adaptability_Evaluation ;
+    rdfs:label "Adaptability evaluation" .
+
+data:Adaptability_evaluation_result
+    rdf:type        owl:NamedIndividual, model:Adaptability_Evaluation_Result ;
+    cco:ont00001808 data:Artifact_design ;
+    cco:ont00001816 data:Act_of_aircraft_processing ;
+    rdfs:label      "Adaptability evaluation result" .
+
+data:Act_of_aircraft_processing
+    rdf:type        owl:NamedIndividual, model:Act_of_Aircraft_Processing ;
+    bfo:BFO_0000055 data:Aerospace_engineer_role_1 ;
+    bfo:BFO_0000055 data:Adaptability_evaluation ;
+    rdfs:label      "Act of aircraft processing" .
+
+data:Aerospace_engineer_SOC_title_1
+    rdf:type        owl:NamedIndividual, model:SOC_Title_1 ;
+    cco:ont00001808 data:Aerospace_engineer_role_1 ;
+    rdfs:label      "Aerospace engineer SOC title 1" .
 
 data:Aerospace_engineer_role_1
     rdf:type   owl:NamedIndividual, model:Job_Role ;
     rdfs:label "Aerospace engineer role 1" .
 
-data:Aerospace_engineer_SOC_title_1
-    rdf:type   owl:NamedIndividual, model:SOC_Title ;
-    rdfs:label "Aerospace engineer SOC title 1" .
+data:soc_datum_1
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:soc_record_1 ;
+    rdfs:label      "SOC datum 1" .
 
-data:Datum_record_1
-    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
-    rdfs:label "Datum record 1" .
+data:soc_record_1
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    skos:definition "SOC record 1" ;
+    rdfs:label      "SOC record 1" .
 
 #################################################################
 #    Task 4
@@ -157,7 +179,7 @@ data:total_employment_measurement_1
     rdfs:label      "total employment measurement 1" .
 
 data:aero_space_engineer_1
-    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    rdf:type        owl:NamedIndividual, model:OCC_Title_1 ;
     cco:ont00001808 data:job_role_1 ;
     rdfs:label      "OCC:Aerospace engineer" ;
     skos:definition "OCC:Aerospace engineer" .
@@ -169,18 +191,19 @@ data:job_role_1
 data:datum_1
     rdf:type        owl:NamedIndividual, cco:ont00000314 ;
     bfo:BFO_0000197 data:record_1 ;
-    rdfs:label      "Dataum 1" .
+    rdfs:label      "Datum 1" .
 
 data:record_1
     rdf:type        owl:NamedIndividual, cco:ont00000253 ;
     model:own_code  "a code"^^xsd:string ;
     model:has_area  "a area"^^xsd:string ;
     model:o_group   "a code"^^xsd:string ;
-    cco:ont00001769 "10000"^^xsd:decimal ;
+    model:has_measurement_value "10000"^^xsd:decimal ;
+    skos:definition "Total Employment" ;
     rdfs:label      "Total Employment" .
 
 data:aero_space_engineer_2
-    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    rdf:type        owl:NamedIndividual, model:OCC_Title_2 ;
     cco:ont00001808 data:job_role_2 ;
     rdfs:label      "OCC:Aerospace engineer" ;
     skos:definition "OCC:Aerospace engineer" .
@@ -199,11 +222,12 @@ data:record_2
     model:own_code  "a code"^^xsd:string ;
     model:has_area  "a area"^^xsd:string ;
     model:o_group   "a code"^^xsd:string ;
-    cco:ont00001769 "10000"^^xsd:decimal ;
+    model:has_measurement_value "10000"^^xsd:decimal ;
+    skos:definition "Total Employment" ;
     rdfs:label      "Total Employment" .
 
 data:aero_space_engineer_3
-    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    rdf:type        owl:NamedIndividual, model:OCC_Title_3 ;
     cco:ont00001808 data:job_role_3 ;
     rdfs:label      "OCC:Aerospace engineer" ;
     skos:definition "OCC:Aerospace engineer" .
@@ -222,7 +246,8 @@ data:record_3
     model:own_code  "a code"^^xsd:string ;
     model:has_area  "a area"^^xsd:string ;
     model:o_group   "a code"^^xsd:string ;
-    cco:ont00001769 "10000"^^xsd:decimal ;
+    model:has_measurement_value "10000"^^xsd:decimal ;
+    skos:definition "Total Employment" ;
     rdfs:label      "Total Employment" .
 
 data:act_of_measuring

@@ -54,7 +54,6 @@
     rdfs:label      "has Manufacturer" ;
     skos:definition "Every artifact has a manufacturer." .
 
-
 # Data properties
 #################################################################
 
@@ -69,7 +68,6 @@
     rdfs:subPropertyOf owl:topDataProperty ;
     rdfs:label         "has Tail Height Ft" ;
     skos:definition    "An fixed wing airplane has a determinable tail height." .
-
 
 :has_Model_BADA
     rdf:type           owl:DatatypeProperty ;
@@ -89,7 +87,7 @@
 # Universals
 #################################################################
 
-:Prescribed_Average_Maximum_Knot_Approach_Speed
+:Prescribed_Maximum_Knot_Approach_Speed
     rdf:type        owl:Class ;
     rdfs:subClassOf cco:ont00000127 ;
     rdfs:label      "Prescribed Average Maximum Knot Approach Speed" ;
@@ -111,18 +109,37 @@
     rdfs:label         "is temporal part of" ;
     skos:definition    "is temporal part of is required instead of temporal part of." .
 
+# Data properties
+#################################################################
+:has_measurement_value
+    rdf:type           owl:DatatypeProperty ;
+    rdfs:subPropertyOf owl:topDataProperty ;
+    rdfs:label         "has measurement value" ;
+    skos:definition    "has measurement value" .
+
 #################################################################
 #    Task 3
 #################################################################
 
 # Universals
 #################################################################
-
 :Adaptability_Evaluation
     rdf:type        owl:Class ;
-    rdfs:subClassOf cco:ont00001163 ;
+    rdfs:subClassOf bfo:BFO_0000017 ;
     rdfs:label      "Adaptability Evaluation" ;
     skos:definition "Adaptability Evaluation" .
+
+:Adaptability_Evaluation_Result
+    rdf:type        owl:Class ;
+    rdfs:subClassOf cco:ont00001163 ;
+    rdfs:label      "Adaptability Evaluation Result" ;
+    skos:definition "Adaptability Evaluation Result" .
+
+:Act_of_Aircraft_Processing
+    rdf:type        owl:Class ;
+    rdfs:subClassOf bfo:BFO_0000015 ;
+    rdfs:label      "Act of Aircraft Processing" ;
+    skos:definition "Act of Aircraft Processing" .
 
 :SOC_Title
     rdf:type        owl:Class ;
@@ -148,11 +165,6 @@
     rdfs:label      "SOC:Aerospace Engineer" ;
     skos:definition "Aerospace Engineer" .
 
-:Act_of_Aircraft_Processing
-    rdf:type        owl:Class ;
-    rdfs:subClassOf bfo:BFO_0000015 ;
-    rdfs:label      "Act of Aircraft Processing" ;
-    skos:definition "Act of Aircraft Processing" .
 
 # Object properties
 #################################################################
@@ -167,6 +179,30 @@
 
 # Universals
 #################################################################
+
+:OCC_Title
+    rdf:type        owl:Class ;
+    rdfs:subClassOf cco:ont00000853 ;
+    rdfs:label      "OCC Title" ;
+    skos:definition "OCC Title" .
+
+:OCC_Title_1
+    rdf:type        owl:Class ;
+    rdfs:subClassOf :OCC_Title ;
+    rdfs:label      "Aerospace Engineer" ;
+    skos:definition "Aerospace Engineer" .
+
+:OCC_Title_2
+    rdf:type        owl:Class ;
+    rdfs:subClassOf :OCC_Title ;
+    rdfs:label      "Aerospace Engineer" ;
+    skos:definition "Aerospace Engineer" .
+
+:OCC_Title_3
+    rdf:type        owl:Class ;
+    rdfs:subClassOf :OCC_Title ;
+    rdfs:label      "Aerospace Engineer" ;
+    skos:definition "Aerospace Engineer" .
 
 :Total_Employment_Measurement
     rdf:type        owl:Class ;
