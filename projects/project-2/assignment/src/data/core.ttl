@@ -12,8 +12,8 @@
 
 <http://www.newfoundland.nl/otc/model>
     rdf:type    owl:Ontology ;
-    owl:imports <http://purl.obolibrary.org/obo/bfo/2020/bfo-core.ttl>,
-                <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
+    owl:imports <https://www.commoncoreontologies.org/2024-11-06/InformationEntityOntology>,
+                <https://www.commoncoreontologies.org/ArtifactOntology> .
 
 #################################################################
 #    Task 1
