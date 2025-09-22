@@ -10,6 +10,7 @@
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix model: <http://www.newfoundland.nl/otc/model/> .
 @prefix terms: <http://purl.org/dc/terms/> .
+@prefix bfo:   <http://purl.obolibrary.org/obo/> .
 @base <http://www.newfoundland.nl/otc/data/> .
 
 <http://www.newfoundland.nl/otc/data>
@@ -148,44 +149,93 @@ data:Datum_record_1
 
 # Particulars
 #################################################################
+data:total_employment_measurement_1
+    rdf:type        owl:NamedIndividual, model:Total_Employment_Measurement ;
+    bfo:BFO_0000058 data:datum_1 ;
+    bfo:BFO_0000058 data:datum_2 ;
+    bfo:BFO_0000058 data:datum_3 ;
+    rdfs:label      "total employment measurement 1" .
 
 data:aero_space_engineer_1
-    rdf:type   owl:NamedIndividual, model:SOC_Title_1 ;
-    rdfs:label "Aerospace engineer" .
+    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    cco:ont00001808 data:job_role_1 ;
+    rdfs:label      "OCC:Aerospace engineer" ;
+    skos:definition "OCC:Aerospace engineer" .
+
+data:job_role_1
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer job role 1" .
+
+data:datum_1
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:record_1 ;
+    rdfs:label      "Dataum 1" .
+
+data:record_1
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    model:own_code  "a code"^^xsd:string ;
+    model:has_area  "a area"^^xsd:string ;
+    model:o_group   "a code"^^xsd:string ;
+    cco:ont00001769 "10000"^^xsd:decimal ;
+    rdfs:label      "Total Employment" .
 
 data:aero_space_engineer_2
-    rdf:type   owl:NamedIndividual, model:SOC_Title_2 ;
-    rdfs:label "Aerospace engineer" .
+    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    cco:ont00001808 data:job_role_2 ;
+    rdfs:label      "OCC:Aerospace engineer" ;
+    skos:definition "OCC:Aerospace engineer" .
+
+data:job_role_2
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer job role 2" .
+
+data:datum_2
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:record_2 ;
+    rdfs:label      "Datum 2" .
+
+data:record_2
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    model:own_code  "a code"^^xsd:string ;
+    model:has_area  "a area"^^xsd:string ;
+    model:o_group   "a code"^^xsd:string ;
+    cco:ont00001769 "10000"^^xsd:decimal ;
+    rdfs:label      "Total Employment" .
 
 data:aero_space_engineer_3
-    rdf:type   owl:NamedIndividual, model:SOC_Title_3 ;
-    rdfs:label "Aerospace engineer" .
+    rdf:type        owl:NamedIndividual, model:SOC_Title ;
+    cco:ont00001808 data:job_role_3 ;
+    rdfs:label      "OCC:Aerospace engineer" ;
+    skos:definition "OCC:Aerospace engineer" .
 
-data:total_employment_1
-    rdf:type   owl:NamedIndividual, model:Total_Employment ;
-    rdfs:label "total employment 1" .
+data:job_role_3
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer job role 3" .
 
-data:total_employment_1_IBE
-    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
-    rdfs:label "total employment 1 IBE" .
+data:datum_3
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:record_3 ;
+    rdfs:label      "Datum 3" .
 
-data:total_employment_2
-    rdf:type   owl:NamedIndividual, model:Total_Employment ;
-    rdfs:label "total employment 2" .
+data:record_3
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    model:own_code  "a code"^^xsd:string ;
+    model:has_area  "a area"^^xsd:string ;
+    model:o_group   "a code"^^xsd:string ;
+    cco:ont00001769 "10000"^^xsd:decimal ;
+    rdfs:label      "Total Employment" .
 
-###  http://www.newfoundland.nl/otc/data/total_employment_2_IBE
-data:total_employment_2_IBE
-    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
-    rdfs:label "total employment 2 IBE" .
+data:act_of_measuring
+    rdf:type        owl:NamedIndividual, model:Act_of_Measuring ;
+    cco:ont00001986 data:datum_1 ;
+    cco:ont00001986 data:datum_2 ;
+    cco:ont00001986 data:datum_3 ;
+    rdfs:label      "Act of measuring" .
 
+data:measurement_unit
+    rdf:type        owl:NamedIndividual, cco:ont00000120 ;
+    cco:ont00001961 data:record_1 ;
+    cco:ont00001961 data:record_2 ;
+    cco:ont00001961 data:record_3 ;
+    rdfs:label      "Measurement unit" .
 
-###  http://www.newfoundland.nl/otc/data/total_employment_3
-data:total_employment_3
-    rdf:type   owl:NamedIndividual, model:Total_Employment ;
-    rdfs:label "total employment 3" .
-
-
-###  http://www.newfoundland.nl/otc/data/total_employment_3_IBE
-data:total_employment_3_IBE
-    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
-    rdfs:label "total employment 3 IBE" .

@@ -168,11 +168,11 @@
 # Universals
 #################################################################
 
-:Total_Employment
+:Total_Employment_Measurement
     rdf:type        owl:Class ;
     rdfs:subClassOf cco:ont00000958 ;
-    rdfs:label      "Total Employment" ;
-    skos:definition "Total Employment survey result." .
+    rdfs:label      "Total Employment Measurement" ;
+    skos:definition "Total Employment Measurement Survey." .
 
 :Act_of_Measuring
     rdf:type        owl:Class ;
