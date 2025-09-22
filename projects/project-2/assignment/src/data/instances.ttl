@@ -1,97 +1,191 @@
-@prefix : <http://www.newfoundland.nl/otc/data#> .
-@prefix dc: <http://purl.org/dc/elements/1.1/> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix www: <https://www.commoncoreontologies.org/> .
-@prefix xml: <http://www.w3.org/XML/1998/namespace> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix :      <http://www.newfoundland.nl/otc/data/> .
+@prefix dc:    <http://purl.org/dc/elements/1.1/> .
+@prefix obo:   <http://purl.obolibrary.org/obo/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix cco:   <https://www.commoncoreontologies.org/> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix data:  <http://www.newfoundland.nl/otc/data/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix model: <http://www.newfoundland.nl/otc/model/> .
 @prefix terms: <http://purl.org/dc/terms/> .
-@base <http://www.newfoundland.nl/otc/data> .
+@base <http://www.newfoundland.nl/otc/data/> .
 
-<http://www.newfoundland.nl/otc/data> rdf:type owl:Ontology ;
-                                       owl:imports <http://purl.obolibrary.org/obo/bfo/2020/bfo-core.ttl> ,
-                                                   <http://www.newfoundland.nl/otc/model> ,
-                                                   <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
-
-#################################################################
-#    Object Properties
-#################################################################
-
-###  http://www.newfoundland.nl/otc/data/has_Manufacturer
-<http://www.newfoundland.nl/otc/data/has_Manufacturer> rdf:type owl:ObjectProperty .
-
+<http://www.newfoundland.nl/otc/data>
+    rdf:type    owl:Ontology ;
+    owl:imports <http://purl.obolibrary.org/obo/bfo/2020/bfo-core.ttl>, <http://www.newfoundland.nl/otc/model>,
+                <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
 
 #################################################################
-#    Individuals
+#    Task 1
 #################################################################
 
-###  http://www.newfoundland.nl/otc/data/Airbus_320N_Spec_1
-<http://www.newfoundland.nl/otc/data/Airbus_320N_Spec_1> rdf:type owl:NamedIndividual ,
-                                                                  [ rdf:type owl:Restriction ;
-                                                                    owl:onProperty www:ont00001808 ;
-                                                                    owl:allValuesFrom [ owl:intersectionOf ( <http://www.newfoundland.nl/otc/model/Fixed_Wing>
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://www.newfoundland.nl/otc/data/has_Manufacturer> ;
-                                                                                                               owl:hasValue <http://www.newfoundland.nl/otc/data/airbus>
-                                                                                                             ]
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://www.newfoundland.nl/otc/model/has_Length_Ft> ;
-                                                                                                               owl:hasValue <http://www.newfoundland.nl/otc/data/length_Airbus_A320_NEO>
-                                                                                                             ]
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://www.newfoundland.nl/otc/model/has_Model_BADA> ;
-                                                                                                               owl:hasValue <http://www.newfoundland.nl/otc/data/model_BADA_Airbus_A320-271N>
-                                                                                                             ]
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://www.newfoundland.nl/otc/model/has_Model_FAA> ;
-                                                                                                               owl:hasValue <http://www.newfoundland.nl/otc/data/model_FAA_Airbus_A320_Neo>
-                                                                                                             ]
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://www.newfoundland.nl/otc/model/has_Tail_Height_Ft> ;
-                                                                                                               owl:hasValue <http://www.newfoundland.nl/otc/data/tail_Height_Airbus_A320_NEO>
-                                                                                                             ]
-                                                                                                             [ rdf:type owl:Restriction ;
-                                                                                                               owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000178> ;
-                                                                                                               owl:qualifiedCardinality "2"^^xsd:nonNegativeInteger ;
-                                                                                                               owl:onClass <http://www.newfoundland.nl/otc/model/Jet_Engine>
-                                                                                                             ]
-                                                                                                           ) ;
-                                                                                        rdf:type owl:Class
-                                                                                      ]
-                                                                  ] ;
-                                                         rdfs:label "Airbus A320 NEO" .
+# Particulars
+#################################################################
+
+data:airbus
+    rdf:type   owl:NamedIndividual, cco:ont00001180 ;
+    rdfs:label "Airbus" .
+
+data:Airbus_320N_Spec_1
+    rdf:type   owl:NamedIndividual ;
+    rdfs:label "Airbus A320n Spec 1" .
+
+data:Airbus_A320_NEO
+    rdf:type                 owl:NamedIndividual, model:Fixed_Wing ;
+    obo:BFO_0000178          data:Jet_Engine_1, data:Jet_Engine_2 ;
+    model:has_Length_Ft      "123.3"^^xsd:decimal ;
+    model:has_Manufacturer   data:airbus ;
+    model:has_Tail_Height_Ft "39.6"^^xsd:decimal ;
+    model:has_Model_BADA     "Airbus A320-271N" ;
+    model:has_Model_FAA      "Airbus A320 Neo" ;
+    rdfs:label               "Airbus A320 NEO" .
+
+data:model_BADA_Airbus_A320-271N
+    rdf:type   owl:NamedIndividual, model:Model_BADA ;
+    rdfs:label "BADA Airbus A320-271N" .
+
+data:model_FAA_Airbus_A320_Neo
+    rdf:type   owl:NamedIndividual, model:Model_FAA ;
+    rdfs:label "FAA Airbus A320 Neo" .
+
+data:Jet_Engine_1
+    rdf:type   owl:NamedIndividual, model:Jet_Engine ;
+    rdfs:label "Jet Engine" .
+
+data:Jet_Engine_2
+    rdf:type   owl:NamedIndividual, model:Jet_Engine ;
+    rdfs:label "Jet Engine" .
+
+#################################################################
+#    Task 2
+#################################################################
+
+# Particulars
+#################################################################
+
+data:Measurement_Unit_of_Knots
+    rdf:type   owl:NamedIndividual, cco:ont00000120 ;
+    rdfs:label "Measurement Unit of Knots" .
+
+data:Prescribed_Average_Maximum_Knot_Approach_Speed_IBE
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    rdfs:label "Prescribed Average Maximum Knot Approach Speed IBE" .
+
+data:Prescribed_Average_Maximum_Knot_Approach_Speed_of_139
+    rdf:type        owl:NamedIndividual, model:Prescribed_Average_Maximum_Knot_Approach_Speed ;
+    cco:ont00001942 data:Airbus_A321-111 ;
+    rdfs:label      "Prescribed Average Maximum Knot Approach Speed of 139" .
+
+data:Airbus_A321-111
+    rdf:type   owl:NamedIndividual, model:Fixed_Wing ;
+    rdfs:label "Airbus A321-111" .
+
+data:Test_Process_overall
+    rdf:type   owl:NamedIndividual, model:Test_Process ;
+    rdfs:label "Test Process Overall" .
+
+data:Test_sub-process_1
+    rdf:type                  owl:NamedIndividual, model:Test_Process ;
+    model:is_temporal_part_of data:Test_Process_overall ;
+    rdfs:label                "Test sub-process 1" .
+
+data:Test_sub-process_2
+    rdf:type                  owl:NamedIndividual, model:Test_Process ;
+    model:is_temporal_part_of data:Test_Process_overall ;
+    rdfs:label                "Test sub-process 2" .
+
+data:Test_sub-process_3
+    rdf:type                  owl:NamedIndividual, model:Test_Process ;
+    model:is_temporal_part_of data:Test_Process_overall ;
+    rdfs:label                "Test sub-process 3" .
+
+data:Test_sub-process_4
+    rdf:type                  owl:NamedIndividual, model:Test_Process ;
+    model:is_temporal_part_of data:Test_Process_overall ;
+    rdfs:label                "Test sub-process 4" .
+
+data:Test_sub-process_5
+    rdf:type                  owl:NamedIndividual, model:Test_Process ;
+    model:is_temporal_part_of data:Test_Process_overall ;
+    rdfs:label                "Test sub-process 5" .
+
+#################################################################
+#    Task 3
+#################################################################
+
+# Particulars
+#################################################################
+
+data:Act_of_aircraft_processing_1
+    rdf:type   owl:NamedIndividual, model:Act_of_Aircraft_Processing ;
+    rdfs:label "Act of aircraft processing 1" .
+
+data:Adaptability_evaluation_1
+    rdf:type   owl:NamedIndividual, model:Adaptability_Evaluation ;
+    rdfs:label "Adaptability evaluation 1" .
+
+data:Artifact_design_1
+    rdf:type   owl:NamedIndividual, cco:ont00000319 ;
+    rdfs:label "Artifact design 1" .
+
+data:Aerospace_engineer_role_1
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer role 1" .
+
+data:Aerospace_engineer_SOC_title_1
+    rdf:type   owl:NamedIndividual, model:SOC_Title ;
+    rdfs:label "Aerospace engineer SOC title 1" .
+
+data:Datum_record_1
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    rdfs:label "Datum record 1" .
+
+#################################################################
+#    Task 4
+#################################################################
+
+# Particulars
+#################################################################
+
+data:aero_space_engineer_1
+    rdf:type   owl:NamedIndividual, model:SOC_Title_1 ;
+    rdfs:label "Aerospace engineer" .
+
+data:aero_space_engineer_2
+    rdf:type   owl:NamedIndividual, model:SOC_Title_2 ;
+    rdfs:label "Aerospace engineer" .
+
+data:aero_space_engineer_3
+    rdf:type   owl:NamedIndividual, model:SOC_Title_3 ;
+    rdfs:label "Aerospace engineer" .
+
+data:total_employment_1
+    rdf:type   owl:NamedIndividual, model:Total_Employment ;
+    rdfs:label "total employment 1" .
+
+data:total_employment_1_IBE
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    rdfs:label "total employment 1 IBE" .
+
+data:total_employment_2
+    rdf:type   owl:NamedIndividual, model:Total_Employment ;
+    rdfs:label "total employment 2" .
+
+###  http://www.newfoundland.nl/otc/data/total_employment_2_IBE
+data:total_employment_2_IBE
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    rdfs:label "total employment 2 IBE" .
 
 
-###  http://www.newfoundland.nl/otc/data/airbus
-<http://www.newfoundland.nl/otc/data/airbus> rdf:type owl:NamedIndividual ,
-                                                      www:ont00001180 ;
-                                             rdfs:label "The Airbus organization." .
+###  http://www.newfoundland.nl/otc/data/total_employment_3
+data:total_employment_3
+    rdf:type   owl:NamedIndividual, model:Total_Employment ;
+    rdfs:label "total employment 3" .
 
 
-###  http://www.newfoundland.nl/otc/data/length_Airbus_A320_NEO
-<http://www.newfoundland.nl/otc/data/length_Airbus_A320_NEO> rdf:type owl:NamedIndividual ,
-                                                                      www:ont00000738 ;
-                                                             rdfs:label 123.3 .
-
-
-###  http://www.newfoundland.nl/otc/data/model_BADA_Airbus_A320-271N
-<http://www.newfoundland.nl/otc/data/model_BADA_Airbus_A320-271N> rdf:type owl:NamedIndividual ,
-                                                                           <http://www.newfoundland.nl/otc/model/Model_BADA> ;
-                                                                  rdfs:label "BADA Airbus A320-271N" .
-
-
-###  http://www.newfoundland.nl/otc/data/model_FAA_Airbus_A320_Neo
-<http://www.newfoundland.nl/otc/data/model_FAA_Airbus_A320_Neo> rdf:type owl:NamedIndividual ,
-                                                                         <http://www.newfoundland.nl/otc/model/Model_FAA> ;
-                                                                rdfs:label "FAA Airbus A320 Neo" .
-
-
-###  http://www.newfoundland.nl/otc/data/tail_Height_Airbus_A320_NEO
-<http://www.newfoundland.nl/otc/data/tail_Height_Airbus_A320_NEO> rdf:type owl:NamedIndividual ,
-                                                                           www:ont00000967 ;
-                                                                  rdfs:label 39.6 .
-
-
-###  Generated by the OWL API (version 4.5.29) https://github.com/owlcs/owlapi
+###  http://www.newfoundland.nl/otc/data/total_employment_3_IBE
+data:total_employment_3_IBE
+    rdf:type   owl:NamedIndividual, cco:ont00000253 ;
+    rdfs:label "total employment 3 IBE" .
