@@ -14,6 +14,7 @@
   - [Due: Project 2 - Modeling Bottlenecks](projects/project-2/README.md)
 
 * **Week 5** [OWL2 Reasoning](https://www.youtube.com/watch?v=5Ae5FNqk6ro&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=3) - OWL2 reasoning, reasoners (HermiT, ELK), ROBOT, Jupyter
+  - [Zebra Logic](https://www.youtube.com/watch?v=cOtpB-moIRA)
 
 * **Week 6** [SHACL Validation](https://www.youtube.com/watch?v=alVaKWmiqtU&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=9) - SHACL basics, node and property shapes, constraint definitions, Jupyter
   - [Due: Project 3 - Ontology Mappings](projects/project-3/README.md)
