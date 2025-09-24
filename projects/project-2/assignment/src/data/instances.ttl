@@ -15,11 +15,9 @@
 
 <http://www.newfoundland.nl/otc/data>
     rdf:type    owl:Ontology ;
-    owl:imports <https://www.commoncoreontologies.org/2024-11-06/InformationEntityOntology>,
-                <http://www.newfoundland.nl/otc/model.ttl>,
-                <https://www.commoncoreontologies.org/ArtifactOntology> .
+    owl:imports <http://www.newfoundland.nl/otc/model> .
 
-#################################################################
+##################################################################
 #    Task 1
 #################################################################
 
@@ -27,11 +25,35 @@
 #################################################################
 
 data:airbus
-    rdf:type   owl:NamedIndividual, cco:ont00001180 ;
+    rdf:type   owl:NamedIndividual ;
     rdfs:label "Airbus" .
 
 data:Airbus_320N_Spec_1
-    rdf:type   owl:NamedIndividual ;
+    a          owl:NamedIndividual ;
+    a          [ a                 owl:Restriction ;
+                 owl:allValuesFrom [ a                  owl:Class ;
+                                     owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
+                                                                             owl:hasValue   data:airbus ;
+                                                                             owl:onProperty model:has_Manufacturer ]
+                                                          [ a                        owl:Restriction ;
+                                                            owl:onClass              model:Jet_Engine ;
+                                                            owl:onProperty           bfo:BFO_0000178 ;
+                                                            owl:qualifiedCardinality "2"^^xsd:nonNegativeInteger ]
+                                                          [ a              owl:Restriction ;
+                                                            owl:hasValue   "123.3"^^xsd:decimal ;
+                                                            owl:onProperty model:has_Length_Ft ] [ a owl:Restriction ;
+                                                                                                   owl:hasValue
+                                                                                                     "BADA Airbus A320-271N" ;
+                                                                                                   owl:onProperty
+                                                                                                     model:has_Model_BADA ]
+                                                          [ a              owl:Restriction ;
+                                                            owl:hasValue   "FAA Airbus A320 Neo" ;
+                                                            owl:onProperty model:has_Model_FAA ] [ a owl:Restriction ;
+                                                                                                   owl:hasValue
+                                                                                                     "39.6"^^xsd:decimal ;
+                                                                                                   owl:onProperty
+                                                                                                     model:has_Tail_Height_Ft ] ) ] ;
+                 owl:onProperty    cco:ont00001808 ] ;
     rdfs:label "Airbus A320n Spec 1" .
 
 data:Airbus_A320_NEO
@@ -67,20 +89,33 @@ data:Jet_Engine_2
 # Particulars
 #################################################################
 
-data:Airbus_A321-111
-    rdf:type   owl:NamedIndividual, model:Fixed_Wing ;
-    rdfs:label "Airbus A321-111" .
+data:Airbus_A320n_Spec_2
+    a               owl:NamedIndividual ;
+    a               [ a                 owl:Restriction ;
+                      owl:allValuesFrom [ a                  owl:Class ;
+                                          owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
+                                                                                  owl:hasValue   data:maximum_knot_approach_speed_ice ;
+                                                                                  owl:onProperty cco:ont00001920 ] ) ] ;
+                      owl:onProperty    cco:ont00001942 ] ;
+    rdfs:label      "Airbus A321-111", "Airbus A320n Spec 2" ;
+    skos:definition "Airbus A321-111", "Airbus A320n Spec 2" ;
+    cco:ont00001942 data:Airbus_A321_111_1 .
+
+data:maximum_knot_approach_speed_ice
+    rdf:type                              cco:ont00000127 ;
+    model:has_maximum_knot_approach_speed "142"^^xsd:integer ;
+    rdfs:label                            "maximum knot approach speed of 142" .
+
+data:Airbus_A321_111_1
+    rdf:type        owl:NamedIndividual, model:Fixed_Wing ;
+    cco:ont00001920 data:maximum_knot_approach_speed_ice ;
+    rdfs:label      "Airbus A321-111 1" .
 
 data:Measurement_Unit_of_Knots
     rdf:type        owl:NamedIndividual, cco:ont00000120 ;
     cco:ont00001961 data:record_3 ;
+    cco:ont00001961 data:maximum_knot_approach_speed_ice ;
     rdfs:label      "Measurement Unit of Knots" .
-
-data:Prescribed_Maximum_Knot_Approach_Speed_of_142
-    rdf:type        owl:NamedIndividual, model:Prescribed_Maximum_Knot_Approach_Speed ;
-    cco:ont00001942 data:Airbus_A321-111 ;
-    bfo:BFO_0000084 data:record_3 ;
-    rdfs:label      "Prescribed Maximum Knot Approach Speed of 142" .
 
 data:record_3
     rdf:type                    owl:NamedIndividual, cco:ont00000253 ;
@@ -91,61 +126,61 @@ data:Test_Process_overall
     rdf:type   owl:NamedIndividual, model:Test_Process ;
     rdfs:label "Test Process Overall" .
 
-data:Test_sub-process_1
+data:Test_sub_process_1
     rdf:type                    owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of   data:Test_Process_overall ;
     model:has_measurement_value "139"^^xsd:decimal ;
     rdfs:label                  "Test sub-process 1" .
 
-data:Test_sub-process_2
+data:Test_sub_process_2
     rdf:type                    owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of   data:Test_Process_overall ;
     model:has_measurement_value "139"^^xsd:decimal ;
     rdfs:label                  "Test sub-process 2" .
 
-data:Test_sub-process_3
+data:Test_sub_process_3
     rdf:type                    owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of   data:Test_Process_overall ;
     model:has_measurement_value "139"^^xsd:decimal ;
     rdfs:label                  "Test sub-process 3" .
 
-data:Test_sub-process_4
+data:Test_sub_process_4
     rdf:type                    owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of   data:Test_Process_overall ;
     model:has_measurement_value "139"^^xsd:decimal ;
-    rdfs:label                  "Test sub-process 4" .
+    rdfs:label                  "Test sub_process 4" .
 
-data:Test_sub-process_5
+data:Test_sub_process_5
     rdf:type                    owl:NamedIndividual, model:Test_Process ;
     model:is_temporal_part_of   data:Test_Process_overall ;
     model:has_measurement_value "139"^^xsd:decimal ;
     rdfs:label                  "Test sub-process 5" .
-
 #################################################################
 #    Task 3
 #################################################################
 
 # Particulars
 #################################################################
-data:Artifact_design
-    rdf:type   owl:NamedIndividual ;
-    rdfs:label "Artifact design" .
+data:Artifact_design_1
+    rdf:type   cco:ont00000319 ;
+    rdfs:label "Artifact Design" .
 
-data:Adaptability_evaluation
-    rdf:type   owl:NamedIndividual, model:Adaptability_Evaluation ;
-    rdfs:label "Adaptability evaluation" .
+data:Adaptability_evaluation_1
+    rdf:type        model:Adaptability_Evaluation ;
+    rdfs:label      "Adapt. Evaluation 1" ;
+    skos:definition "Adapt. Evaluation 1" .
 
-data:Adaptability_evaluation_result
-    rdf:type        owl:NamedIndividual, model:Adaptability_Evaluation_Result ;
-    cco:ont00001808 data:Artifact_design ;
+data:Adaptability_evaluation_result_1
+    rdf:type        model:Adaptability_Evaluation_Result ;
+    cco:ont00001808 data:Artifact_design_1 ;
     cco:ont00001816 data:Act_of_aircraft_processing ;
-    rdfs:label      "Adaptability evaluation result" .
+    rdfs:label      "Adapt. eval. result 1" .
 
-data:Act_of_aircraft_processing
+data:Act_of_aircraft_processing_1
     rdf:type        owl:NamedIndividual, model:Act_of_Aircraft_Processing ;
-    bfo:BFO_0000055 data:Aerospace_engineer_role_1 ;
-    bfo:BFO_0000055 data:Adaptability_evaluation ;
-    rdfs:label      "Act of aircraft processing" .
+    #bfo:BFO_0000055 data:Aerospace_engineer_role_1 ;
+    bfo:BFO_0000055 data:Adaptability_evaluation_1 ;
+    rdfs:label      "Act of Aircraft Processing 1" .
 
 data:Aerospace_engineer_SOC_title_1
     rdf:type        owl:NamedIndividual, model:SOC_Title_1 ;
@@ -166,9 +201,48 @@ data:soc_record_1
     skos:definition "SOC record 1" ;
     rdfs:label      "SOC record 1" .
 
-#################################################################
-#    Task 4
-#################################################################
+data:Aerospace_engineer_SOC_title_2
+    rdf:type        owl:NamedIndividual, model:SOC_Title_2 ;
+    cco:ont00001808 data:Aerospace_engineer_role_2 ;
+    rdfs:label      "Aerospace engineer SOC title 2" .
+
+data:Aerospace_engineer_role_2
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer role 2" .
+
+data:soc_datum_2
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:soc_record_2 ;
+    rdfs:label      "SOC datum 2" .
+
+data:soc_record_2
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    skos:definition "SOC record 2" ;
+    rdfs:label      "SOC record 2" .
+
+
+data:Aerospace_engineer_SOC_title_3
+    rdf:type        owl:NamedIndividual, model:SOC_Title_3 ;
+    cco:ont00001808 data:Aerospace_engineer_role_3 ;
+    rdfs:label      "Aerospace engineer SOC title 3" .
+
+data:Aerospace_engineer_role_3
+    rdf:type   owl:NamedIndividual, model:Job_Role ;
+    rdfs:label "Aerospace engineer role 3" .
+
+data:soc_datum_3
+    rdf:type        owl:NamedIndividual, cco:ont00000314 ;
+    bfo:BFO_0000197 data:soc_record_3 ;
+    rdfs:label      "SOC datum 3" .
+
+data:soc_record_3
+    rdf:type        owl:NamedIndividual, cco:ont00000253 ;
+    skos:definition "SOC record 3" ;
+    rdfs:label      "SOC record 3" .
+
+##################################################################
+##    Task 4
+##################################################################
 
 # Particulars
 #################################################################

@@ -13,7 +13,8 @@
 <http://www.newfoundland.nl/otc/model>
     rdf:type    owl:Ontology ;
     owl:imports <https://www.commoncoreontologies.org/2024-11-06/InformationEntityOntology>,
-                <https://www.commoncoreontologies.org/ArtifactOntology> .
+                <https://www.commoncoreontologies.org/ArtifactOntology>,
+                <https://www.commoncoreontologies.org/ExtendedRelationOntology> .
 
 #################################################################
 #    Task 1
@@ -86,13 +87,6 @@
 
 # Universals
 #################################################################
-
-:Prescribed_Maximum_Knot_Approach_Speed
-    rdf:type        owl:Class ;
-    rdfs:subClassOf cco:ont00000127 ;
-    rdfs:label      "Prescribed Average Maximum Knot Approach Speed" ;
-    skos:definition "Prescribed Average Maximum Knot Approach Speed for an airplane." .
-
 :Test_Process
     rdf:type        owl:Class ;
     rdfs:subClassOf bfo:BFO_0000015 ;
@@ -117,50 +111,50 @@
     rdfs:label         "has measurement value" ;
     skos:definition    "has measurement value" .
 
+:has_maximum_knot_approach_speed
+    rdf:type           owl:DatatypeProperty ;
+    rdfs:subPropertyOf owl:topDataProperty ;
+    rdfs:label         "has maximum knot approach speed" ;
+    skos:definition    "has maximum knot approach speed" .
+
 #################################################################
 #    Task 3
 #################################################################
 
 # Universals
 #################################################################
+
 :Adaptability_Evaluation
-    rdf:type        owl:Class ;
     rdfs:subClassOf bfo:BFO_0000017 ;
     rdfs:label      "Adaptability Evaluation" ;
     skos:definition "Adaptability Evaluation" .
 
 :Adaptability_Evaluation_Result
-    rdf:type        owl:Class ;
     rdfs:subClassOf cco:ont00001163 ;
-    rdfs:label      "Adaptability Evaluation Result" ;
-    skos:definition "Adaptability Evaluation Result" .
+    rdfs:label      "Adapt. Eval. Result" ;
+    skos:definition "Def Adapt. Eval. Result" .
 
 :Act_of_Aircraft_Processing
-    rdf:type        owl:Class ;
     rdfs:subClassOf bfo:BFO_0000015 ;
     rdfs:label      "Act of Aircraft Processing" ;
-    skos:definition "Act of Aircraft Processing" .
+    skos:definition "Def Act of Aircraft Processing" .
 
 :SOC_Title
-    rdf:type        owl:Class ;
     rdfs:subClassOf cco:ont00000853 ;
     rdfs:label      "SOC Title" ;
     skos:definition "SOC Title" .
 
 :SOC_Title_1
-    rdf:type        owl:Class ;
     rdfs:subClassOf :SOC_Title ;
     rdfs:label      "SOC:Aerospace Engineer" ;
     skos:definition "Aerospace Engineer" .
 
 :SOC_Title_2
-    rdf:type        owl:Class ;
     rdfs:subClassOf :SOC_Title ;
     rdfs:label      "SOC:Aerospace Engineer" ;
     skos:definition "Aerospace Engineer" .
 
 :SOC_Title_3
-    rdf:type        owl:Class ;
     rdfs:subClassOf :SOC_Title ;
     rdfs:label      "SOC:Aerospace Engineer" ;
     skos:definition "Aerospace Engineer" .
