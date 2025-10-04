@@ -1,0 +1,5 @@
+@prefix ies4: <http://ies.data.gov.uk/ontology/ies4#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://purl.obolibrary.org/obo/bfo#4#Event> rdfs:subClassOf ies4:00015 .
+
