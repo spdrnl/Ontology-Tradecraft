@@ -17,6 +17,7 @@
   - [Zebra Logic](https://www.youtube.com/watch?v=cOtpB-moIRA)
 
 * **Week 6** [SHACL Validation](https://www.youtube.com/watch?v=alVaKWmiqtU&list=PLDpLIEgKNGbOVAAfiD_28PH18wcktXy3M&index=9) - SHACL basics, node and property shapes, constraint definitions, Jupyter
+  - [Lecture on Ontology Mappings](https://youtu.be/4MPBavNBgnU)
   - [Due: Project 3 - Ontology Mappings](projects/project-3/README.md)
 
 * **Week 7** [Data Integration with Ontologies]() - ETL, R2RML & OpenRefine, Ontop, SQL vs SPARQL
