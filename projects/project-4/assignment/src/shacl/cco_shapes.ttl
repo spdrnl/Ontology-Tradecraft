@@ -1,0 +1,55 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix cco:  <http://www.ontologyrepository.com/CommonCoreOntologies/> .
+@prefix ex:   <http://example.org/kg/> .
+
+# Replace targetClass with your actual Measurement ICE class
+ex:MeasurementShape
+  a sh:NodeShape ;
+  sh:targetClass cco:MeasurementInformationContentEntity ;
+  sh:property [
+    sh:path rdfs:label ;
+    sh:minCount 1 ;
+    sh:datatype xsd:string ;
+    sh:message "Measurement ICE must have an rdfs:label." ;
+  ] ;
+  sh:property [
+    sh:path cco:hasNumericalValue ;
+    sh:minCount 1 ;
+    sh:datatype xsd:decimal ;
+    sh:message "Measurement ICE must have a numeric value (xsd:decimal)." ;
+  ] ;
+  sh:property [
+    sh:path cco:hasUnit ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI ;
+    sh:message "Measurement ICE must reference a unit IRI." ;
+  ] ;
+  sh:property [
+    sh:path cco:aboutEntity ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI ;
+    sh:message "Measurement ICE must link to an observed entity IRI." ;
+  ] .
+
+# Uniqueness of rdfs:label is hard in pure SHACL; do it via SPARQL-based shape.
+# This shape flags any label used by >1 IRI.
+ex:UniqueLabelShape
+  a sh:NodeShape ;
+  sh:targetNode ex:dummy ; # dummy target; SPARQL constraint does global check
+  sh:sparql [
+    sh:message "Duplicate rdfs:label among IRIs." ;
+    sh:select """
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?this WHERE {
+        {
+          SELECT ?label (COUNT(DISTINCT ?s) AS ?n)
+          WHERE { ?s rdfs:label ?label . FILTER(isIRI(?s)) }
+          GROUP BY ?label HAVING (?n > 1)
+        }
+        BIND (IRI(CONCAT('http://example.org/kg/dup/', ENCODE_FOR_URI(STR(?label)))) AS ?this)
+      }
+    """ ;
+  ] .
