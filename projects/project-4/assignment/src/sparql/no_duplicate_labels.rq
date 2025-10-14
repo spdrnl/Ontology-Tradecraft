@@ -1,0 +1,6 @@
+# Title: 
+#     No Duplicate Labels
+# Constraint Description: 
+#     No two ontology elements shall have the same rdfs:label.
+# Severity:
+#     Warning
