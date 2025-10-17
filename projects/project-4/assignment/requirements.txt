@@ -1,5 +1,4 @@
+pandas
 rdflib
 pyshacl
-SPARQLWrapper
-pandas
-tabulate
+python-dateutil
