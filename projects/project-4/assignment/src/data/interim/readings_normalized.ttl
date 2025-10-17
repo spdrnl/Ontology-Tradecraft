@@ -1,0 +1,75 @@
+@prefix : <http://www.newfoundland.nl/otc/project-4> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+: a owl:Ontology ;
+    rdfs:label "Sensor Data Ontology"@en ;
+    rdfs:comment "An ontology for sensor readings and measurements"@en .
+
+:observed-entity-62eQHP4wxBtcE33OakrY5-brCvg a :ObservedEntity ;
+    rdfs:label "Pump-A1"@en .
+
+:observed-entity-E3XGfkBitgux7_rmED_eD5cnNBk a :ObservedEntity ;
+    rdfs:label "Chiller-3"@en .
+
+:observed-entity-UQCjFCArJKh5mpKccwu4ryT4UgA a :ObservedEntity ;
+    rdfs:label "Boiler-07"@en .
+
+:sensor-9c_RULezQrXuHvj7N7mli-YBcEw a :Sensor ;
+    rdfs:label "Sensor sensor_A on Chiller-3"@en .
+
+:sensor-OSQH-8LQnAOMvtAuPguA_feiNLA a :Sensor ;
+    rdfs:label "Sensor sensor_B on Boiler-07"@en .
+
+:sensor-QfXfM0j2IdCqkh4fId3sA-_n0oo a :Sensor ;
+    rdfs:label "Sensor sensor_A on Boiler-07"@en .
+
+:sensor-i-t7dvqCTv7PY0B64lzEKVT8Hm8 a :Sensor ;
+    rdfs:label "Sensor sensor_A on Pump-A1"@en .
+
+:sensor-observation-AHW7u1CyjWuQ9XPyNY4qpgTeE_g a :SensorObservation ;
+    rdfs:label "Sensor sensor_B on Chiller-3 at 2024-03-18 12:01:00+00:00"@en .
+
+:sensor-observation-AUqWqp0IXSTprtxTNCPO09Vnnvo a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Boiler-07 at 2024-03-17 23:04:00+00:00"@en .
+
+:sensor-observation-Bt71dPibcXxXF-rlb9XuQmDUBxo a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Pump-A1 at 2024-03-18 12:07:00+00:00"@en .
+
+:sensor-observation-HN0DBcO-t9fQVDca6c8Ble2cTKA a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Chiller-3 at 2024-03-18 12:01:00+00:00"@en .
+
+:sensor-observation-IsZXvNIuvCrAgajj8iqSYs6pjx4 a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Boiler-07 at 2024-03-17 23:03:00+00:00"@en .
+
+:sensor-observation-PEHldRejByfE1o6T060VAYQNBiA a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Chiller-3 at 2024-03-18 12:06:00+00:00"@en .
+
+:sensor-observation-SeyCG5B6aCfXaGLsl2cqc0RVlDQ a :SensorObservation ;
+    rdfs:label "Sensor sensor_B on Boiler-07 at 2024-03-17 23:03:00+00:00"@en .
+
+:sensor-observation-VOdY_uGeavoHd-s0lCXMD3ezbzQ a :SensorObservation ;
+    rdfs:label "Sensor sensor_B on Chiller-3 at 2024-03-18 12:06:00+00:00"@en .
+
+:sensor-observation-YoI_iXCmW0bSgEjNlRSpyF4s_7s a :SensorObservation ;
+    rdfs:label "Sensor sensor_B on Boiler-07 at 2024-03-17 23:04:00+00:00"@en .
+
+:sensor-observation-yPnaaiu5MzLudLuFot_bxX1wVJQ a :SensorObservation ;
+    rdfs:label "Sensor sensor_A on Pump-A1 at 2024-03-18 12:08:00+00:00"@en .
+
+:sensor-pWIQAuhWp6Wjvyhwd6U4DS25FEs a :Sensor ;
+    rdfs:label "Sensor sensor_B on Chiller-3"@en .
+
+:ObservedEntity a owl:Class ;
+    rdfs:label "Observed entity"@en ;
+    skos:definition "An entity that is measured by a sensor."@en .
+
+:Sensor a owl:Class ;
+    rdfs:label "Sensor"@en ;
+    skos:definition "A mechanical device that can generate a measurement."@en .
+
+:SensorObservation a owl:Class ;
+    rdfs:label "Sensor observation"@en ;
+    skos:definition "A sensor measurement of an entity at a certain time."@en .
+

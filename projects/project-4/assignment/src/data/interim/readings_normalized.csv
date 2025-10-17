@@ -1,0 +1,11 @@
+observation_id,observed_entity_id,quantity_kind,value,unit_code,timestamp,source
+A-000001,Boiler-07,temperature,100.0,C,2024-03-17 23:03:00+00:00,sensor_A
+A-000002,Boiler-07,pressure,101.352972,kPa,2024-03-17 23:04:00+00:00,sensor_A
+A-000003,Chiller-3,temperature,20.0,C,2024-03-18 12:01:00+00:00,sensor_A
+A-000004,Chiller-3,temperature,,C,2024-03-18 12:06:00+00:00,sensor_A
+A-000005,Pump-A1,pressure,101.325,kPa,2024-03-18 12:07:00+00:00,sensor_A
+A-000006,Pump-A1,pressure,,kPa,2024-03-18 12:08:00+00:00,sensor_A
+B-000001,Boiler-07,temperature,100.0,C,2024-03-17 23:03:00+00:00,sensor_B
+B-000002,Boiler-07,pressure,101.325,kPa,2024-03-17 23:04:00+00:00,sensor_B
+B-000003,Chiller-3,temperature,19.5,C,2024-03-18 12:01:00+00:00,sensor_B
+B-000004,Chiller-3,temperature,,C,2024-03-18 12:06:00+00:00,sensor_B

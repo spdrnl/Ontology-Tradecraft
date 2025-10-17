@@ -14,11 +14,12 @@ import json
 import logging
 import math
 import pathlib
-from datetime import timezone
+from datetime import datetime
+import pytz
 
 import pandas as pd
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[0]
 SRC = ROOT / "data" / "source"
 OUT_DIR = ROOT / "data" / "interim"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,7 +56,7 @@ UNIT_MAP = {
 
 # Basic sanity bounds (pre-ETL triage). Adjust as needed.
 BOUNDS = {
-    "temperature": {"min": -100.0, "max": 200.0},  # in reported units (mixed!)
+    "temperature": {"min": -100.0, "max": 212.0},  # in reported units (mixed!)
     "pressure": {"min": 0.0, "max": 1_000_000.0},
 }
 
@@ -93,7 +94,7 @@ def _parse_timestamp_any(s: str) -> pd.Timestamp:
     if s is None or str(s).strip() == "":
         return pd.NaT
     try:
-        ts = pd.to_datetime(s, utc=True, infer_datetime_format=True)
+        ts = pd.to_datetime(s, utc=True)
         return ts
     except Exception:
         return pd.NaT
@@ -110,6 +111,20 @@ def _coerce_float(x):
 # ------------------------
 # Normalizers per source
 # ------------------------
+def local_time_to_utc(local_time_str):
+    # Define the timezone for Buffalo, New York
+    buffalo_tz = pytz.timezone('America/New_York')
+
+    # Parse the local time string
+    naive_dt = datetime.strptime(local_time_str, "%m/%d/%y %H:%M")
+
+    # Localize to Buffalo timezone (this will handle DST automatically)
+    local_dt = buffalo_tz.localize(naive_dt)
+
+    # Convert to UTC
+    utc_dt = local_dt.astimezone(pytz.UTC)
+
+    return utc_dt
 
 def normalize_csv_sensor_a(path: pathlib.Path) -> pd.DataFrame:
     """
@@ -136,7 +151,7 @@ def normalize_csv_sensor_a(path: pathlib.Path) -> pd.DataFrame:
     df["quantity_kind"] = df["quantity_kind"].map(_canon_kind)
     df["unit_code"] = df["unit_code"].map(_canon_unit)
     df["value"] = df["value"].map(_coerce_float)
-    df["timestamp"] = df["timestamp"].map(_parse_timestamp_any)
+    df["timestamp"] = df["timestamp"].map(local_time_to_utc)
 
     # Add source
     df["source"] = "sensor_A"
@@ -228,17 +243,32 @@ def add_observation_ids(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
 # Main
 # ------------------------
 
+def standardize_to_si(df):
+    """Convert units to SI"""
+    mask = df.unit_code == 'F'
+    df.loc[mask, 'value'] = (df.loc[mask, 'value'] - 32) * 5 / 9
+    df.loc[mask, 'unit_code'] = 'C'
+
+    # Convert PSI values to kPa
+    mask_psi = df.unit_code == 'psi'
+    df.loc[mask_psi, 'value'] = df.loc[mask_psi, 'value'] * 6.89476
+    df.loc[mask_psi, 'unit_code'] = 'kPa'
+
+    return df
+
 def main():
     a_path = SRC / "sensor_A.csv"
     b_path = SRC / "sensor_B.json"
 
     if not a_path.exists() or not b_path.exists():
-        raise SystemExit("Missing input files in data/source/: sensor_A.csv and/or sensor_B.json")
+        raise SystemExit(f"Missing input files in {SRC}: sensor_A.csv and/or sensor_B.json")
 
     df_a = normalize_csv_sensor_a(a_path)
     df_b = normalize_json_sensor_b(b_path)
 
     df = add_observation_ids(df_a, df_b)
+
+    df = standardize_to_si(df)
 
     # Quick triage (prints warnings)
     quick_triage(df)
