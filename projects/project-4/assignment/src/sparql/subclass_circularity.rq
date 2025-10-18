@@ -5,11 +5,28 @@
 # Severity:  
 #    Error
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?element3
+SELECT ?element1 ?error
 WHERE {
-  ?element2 rdfs:subClassOf ?element1 .
-  ?element3 rdfs:subClassof* ?element2 .
-  FILTER (?element3 = ?element1)
-  BIND (concat("Error: The following ontology element appears in a circular `subClassOf` hierarchy ", str(?element1)) AS ?error)
+    {
+        SELECT DISTINCT ?element1
+        WHERE {
+            {
+                SELECT ?element1 ?element2
+                WHERE {
+                    ?element2 rdfs:subClassOf* ?element1 .
+                    FILTER (?element2 != ?element1)
+                }
+            }
+            {
+                SELECT ?element3 ?element4
+                WHERE {
+                    ?element4 rdfs:subClassOf* ?element3 .
+                    FILTER (?element3 != ?element4)
+                }
+            }
+            FILTER(?element1 = ?element4 && ?element2 = ?element3)
+        }
+    }
+    BIND (concat("Error: The following ontology element appears in a circular `subClassOf` hierarchy ", str(?element1)) AS ?error)
 }
-ORDER BY DESC(UCASE(str(?element1)))
+ORDER BY ASC(UCASE(str(?element1)))
