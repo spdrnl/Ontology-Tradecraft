@@ -19,11 +19,11 @@ import pytz
 
 import pandas as pd
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-SRC = ROOT / "data" / "source"
-OUT_DIR = ROOT / "data" / "interim"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-OUT_CSV = OUT_DIR / "readings_normalized.csv"
+SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
+DATA_SOURCE = SRC_ROOT / "data" / "source"
+DATA_INTERIM = SRC_ROOT / "data" / "interim"
+DATA_INTERIM.mkdir(parents=True, exist_ok=True)
+OUT_CSV = DATA_INTERIM / "readings_normalized.csv"
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -257,11 +257,11 @@ def standardize_to_si(df):
     return df
 
 def main():
-    a_path = SRC / "sensor_A.csv"
-    b_path = SRC / "sensor_B.json"
+    a_path = DATA_SOURCE / "sensor_A.csv"
+    b_path = DATA_SOURCE / "sensor_B.json"
 
     if not a_path.exists() or not b_path.exists():
-        raise SystemExit(f"Missing input files in {SRC}: sensor_A.csv and/or sensor_B.json")
+        raise SystemExit(f"Missing input files in {DATA_SOURCE}: sensor_A.csv and/or sensor_B.json")
 
     df_a = normalize_csv_sensor_a(a_path)
     df_b = normalize_json_sensor_b(b_path)

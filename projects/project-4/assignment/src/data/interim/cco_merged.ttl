@@ -1158,7 +1158,7 @@ cco:ont00001805 rdf:type owl:ObjectProperty ;
                  dcterms:created "2022-12-30T21:32:27-05:00"^^xsd:dateTime ;
                  dcterms:creator "https://cubrc.org"^^xsd:anyURI ;
                  rdfs:label "is disrupted by"@en ;
-                 skos:definition "Inverse of disrupts." ;
+                 skos:definition "Inverse of disrupts."@en ;
                  skos:prefLabel "is disrupted by"@en ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/ExtendedRelationOntology"^^xsd:anyURI .
 
@@ -1772,7 +1772,7 @@ cco:ont00001866 rdf:type owl:ObjectProperty ;
                  dcterms:created "2022-12-30T21:32:27-05:00"^^xsd:dateTime ;
                  dcterms:creator "https://cubrc.org"^^xsd:anyURI ;
                  rdfs:label "is interest of"@en ;
-                 skos:definition "The inverse of has_interest_in. " ;
+                 skos:definition "The inverse of has_interest_in."@en ;
                  skos:prefLabel "is interest of"@en ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/AgentOntology"^^xsd:anyURI .
 

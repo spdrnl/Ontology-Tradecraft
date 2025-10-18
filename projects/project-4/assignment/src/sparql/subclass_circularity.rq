@@ -4,12 +4,12 @@
 #    No class should appear in a circular `subClassOf` hierarchy.
 # Severity:  
 #    Error
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?element ?error
+SELECT ?element3
 WHERE {
-  ?element1 rdfs:subClassof ?element1 .
-  FILTER (?element1 = ?element2)
-  BIND (concat("Error: The following ontology element appears in a circular `subClassOf` hierarchy ", str(?element)) AS ?error)
+  ?element2 rdfs:subClassOf ?element1 .
+  ?element3 rdfs:subClassof* ?element2 .
+  FILTER (?element3 = ?element1)
+  BIND (concat("Error: The following ontology element appears in a circular `subClassOf` hierarchy ", str(?element1)) AS ?error)
 }
 ORDER BY DESC(UCASE(str(?element1)))

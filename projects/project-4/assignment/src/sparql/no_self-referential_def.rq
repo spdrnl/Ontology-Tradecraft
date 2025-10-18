@@ -9,7 +9,7 @@ SELECT DISTINCT ?element ?definition ?error
 WHERE {
   ?element skos:definition ?definition .
   BIND(REPLACE(?definition, "^A (wordPattern) is a *.", "$1") AS ?term)
-  BIND(REPLACE(?definition, "^A (wordPattern) is a (text))", "$1") AS ?definitionWords)
+  BIND(REPLACE(?definition, "^A (wordPattern) is a (text))", "$2") AS ?definitionWords)
   FILTER regex(?definitionWords, ?term)
   BIND (concat("Error: The following ontology element has a self-referential skos:definition ", str(?element)) AS ?error)
 }
