@@ -4,7 +4,7 @@ Normalize heterogeneous measurement feeds to a common CSV:
 observation_id, observed_entity_id, quantity_kind, value, unit_code, timestamp, source
 
 Run:
-  python scripts/extract_normalize.py
+  python scripts/normalize_readings.py
 Outputs:
   data/interim/readings_normalized.csv
 """

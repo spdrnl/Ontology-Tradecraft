@@ -3,4 +3,13 @@
 # Constraint Description: 
 #    No annotation value may have leading or trailing whitespace.    
 # Severity:
-#    Error 
+#    Error
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?element ?error
+WHERE {
+  ?element skos:definition|rdfs:label|skos:prefLabel|skos:altLabel|skos:hiddenLabel ?textValue .
+  FILTER (str(?textValue) != REPLACE(str(?textValue), "(^\\s+|\\s+$)", ""))
+  BIND (concat("Error: The following ontology element has leading or trailing whitespace in skos:definition ", str(?element)) AS ?error)
+}
+ORDER BY DESC(UCASE(str(?textValue)))
