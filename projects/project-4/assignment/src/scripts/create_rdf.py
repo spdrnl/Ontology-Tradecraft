@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 from pandas import DataFrame
-from rdflib import OWL, RDF, RDFS, SKOS
+from rdflib import OWL, RDF, RDFS, SKOS, XSD
 from rdflib import Namespace, URIRef, Literal, Graph
 import base64
 import logging
@@ -12,20 +12,6 @@ from hashlib import sha1
 from typing import Iterable
 
 logger = logging.getLogger(__name__)
-
-# Material Artifact https://www.commoncoreontologies.org/ont00000995
-# quality http://purl.obolibrary.org/obo/BFO_0000019
-# Temperature https://www.commoncoreontologies.org/ont00000441
-# MICE https://www.commoncoreontologies.org/ont00001364
-# Nominal MICE https://www.commoncoreontologies.org/ont00000293
-# Ratio measurement https://www.commoncoreontologies.org/ont00001022
-# Sensor https://www.commoncoreontologies.org/ont00000569
-# bearer of http://purl.obolibrary.org/obo/BFO_0000196
-# is a measurement of https://www.commoncoreontologies.org/ont00001966
-# is a ratio measurement of https://www.commoncoreontologies.org/ont00001983
-# is a ordinal meseasurement of https://www.commoncoreontologies.org/ont00001811
-# has decimal value https://www.commoncoreontologies.org/ont00001769
-# uses measurement unit https://www.commoncoreontologies.org/ont00001863
 
 # Path settings
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -301,9 +287,9 @@ def create_sensor_readings(df: DataFrame, g: Graph, ns: Namespace):
     """
     # Create sensor readings
     class_name = "SensorObservation"
-    g.add((ns[class_name], RDF.type, OWL.Class))
+    g.add((ns[class_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001364")))
     g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
-    g.add((ns[class_name], SKOS.definition, Literal("A sensor measurement of an entity at a certain time.", lang='en')))
+    g.add((ns[class_name], SKOS.definition, Literal("A sensor observation is a measurement of an entity.", lang='en')))
 
     for index, row in df.iterrows():
         q_name = unique_qname(class_name, [row.observed_entity_id, row.source, row.timestamp])
@@ -332,15 +318,28 @@ def create_observed_entities(df: DataFrame, g: Graph, ns: Namespace):
     :return: None
     """
     class_name = "ObservedEntity"
-    g.add((ns[class_name], RDF.type, OWL.Class))
+    g.add((ns[class_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000995")))
     g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
-    g.add((ns[class_name], SKOS.definition, Literal("An entity that is measured by a sensor.", lang='en')))
+    g.add((ns[class_name], SKOS.definition, Literal("An observed entity is an entity that is measured by a sensor.", lang='en')))
 
     observed_entity_ids = df['observed_entity_id'].unique()
     for observed_entity_id in observed_entity_ids:
-        q_name = unique_qname(class_name, [observed_entity_id])
-        g.add((ns[q_name], RDF.type, ns[class_name]))
-        g.add((ns[q_name], RDFS.label, Literal(observed_entity_id, lang='en')))
+        entity_q_name = unique_qname(class_name, [observed_entity_id])
+        label = "Observed entity {observed_entity_id}"
+        g.add((ns[entity_q_name], RDF.type, ns[class_name]))
+        g.add((ns[entity_q_name], RDFS.label, Literal(label, lang='en')))
+
+        # Add quality
+        # quality http://purl.obolibrary.org/obo/BFO_0000019
+        quality_q_name = unique_qname("quality", [observed_entity_id])
+        label = f"Quality for {observed_entity_id}"
+        g.add((ns[quality_q_name], RDF.type, URIRef("http://purl.obolibrary.org/obo/BFO_0000019")))
+        g.add((ns[quality_q_name], RDFS.label, Literal(label, lang='en')))
+
+        # Add bearer of
+        # bearer of http://purl.obolibrary.org/obo/BFO_0000196
+        g.add((ns[entity_q_name], URIRef("http://purl.obolibrary.org/obo/BFO_0000196"), ns[quality_q_name]))
+
 
 
 def create_sensors(df: DataFrame, g: Graph, ns: Namespace):
@@ -360,18 +359,75 @@ def create_sensors(df: DataFrame, g: Graph, ns: Namespace):
     """
     ## Create sensor class
     class_name = "Sensor"
-    g.add((ns[class_name], RDF.type, OWL.Class))
+    g.add((ns[class_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000569")))
     g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
-    g.add((ns[class_name], SKOS.definition, Literal("A mechanical device that can generate a measurement.", lang='en')))
+    g.add((ns[class_name], SKOS.definition, Literal("A sensor is a mechanical device that can generate a measurement.", lang='en')))
 
     ## Create sensor instances
     source_ids = df[['observed_entity_id', 'source']].drop_duplicates()
     for _, row in source_ids.iterrows():
-        q_name = unique_qname(class_name, [row.observed_entity_id, row.source])
+        mice_q_name = unique_qname(class_name, [row.observed_entity_id, row.source])
         label = f"Sensor {row.source} on {row.observed_entity_id}"
-        g.add((ns[q_name], RDF.type, ns[class_name]))
-        g.add((ns[q_name], RDFS.label, Literal(label, lang='en')))
+        g.add((ns[mice_q_name], RDF.type, ns[class_name]))
+        g.add((ns[mice_q_name], RDFS.label, Literal(label, lang='en')))
+
+
+    # Celsius is https://www.commoncoreontologies.org/ont00001606
+    # kPa is 1000 * https://www.commoncoreontologies.org/ont00001559
+    # MICE https://www.commoncoreontologies.org/ont00001364
+
+    # Add Pa
+    pa_q_name = "unit-Pascal"
+    label = f"Pascal measurement unit"
+    g.add((ns[pa_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001559")))
+    g.add((ns[pa_q_name], RDFS.label, Literal(label, lang='en')))
+
+    # Add Celsius
+    c_q_name = "unit-Celsius"
+    label = f"Celsius measurement unit"
+    g.add((ns[c_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001606")))
+    g.add((ns[c_q_name], RDFS.label, Literal(label, lang='en')))
+
+    for _, row in df.iterrows():
+        # Add MICE
+        # MICE https://www.commoncoreontologies.org/ont00001364
+        mice_q_name = unique_qname("mice-inst", [row.observation_id, row.observed_entity_id, row.source, row.timestamp])
+        label = f"Observation {row.observation_id} on {row.observed_entity_id} by {row.source} at {row.timestamp}"
+        g.add((ns[mice_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001364")))
+        g.add((ns[mice_q_name], RDFS.label, Literal(label, lang='en')))
+
+        # Add value
+        # has decimal value https://www.commoncoreontologies.org/ont00001769
+        g.add((ns[mice_q_name], URIRef("https://www.commoncoreontologies.org/ont00001769"), Literal(1000*row.value, datatype=XSD.decimal)))
+
+        # Add uses measurement unit
+        # uses measurement unit https://www.commoncoreontologies.org/ont00001863
+        if row.unit_code == "kPa":
+            g.add((ns[mice_q_name], URIRef("https://www.commoncoreontologies.org/ont00001863"), ns[pa_q_name]))
+        elif row.unit_code == "C":
+            g.add((ns[mice_q_name], URIRef("https://www.commoncoreontologies.org/ont00001863"), ns[c_q_name]))
+        else:
+            print(f"Unknown unit: {row.unit_code}")
+
+        # Is measurement of quality
+        # is a measurement of https://www.commoncoreontologies.org/ont00001966
+        quality_q_name = unique_qname("quality", [row.observed_entity_id])
+        g.add((ns[mice_q_name], URIRef("https://www.commoncoreontologies.org/ont00001966"), ns[quality_q_name]))
 
 
 if __name__ == "__main__":
     main()
+
+
+
+# Temperature https://www.commoncoreontologies.org/ont00000441
+# Nominal MICE https://www.commoncoreontologies.org/ont00000293
+# Ratio measurement https://www.commoncoreontologies.org/ont00001022
+# is a ratio measurement of https://www.commoncoreontologies.org/ont00001983
+# is a ordinal meseasurement of https://www.commoncoreontologies.org/ont00001811
+
+
+
+# Sensor https://www.commoncoreontologies.org/ont00000569
+# Material Artifact https://www.commoncoreontologies.org/ont00000995
+

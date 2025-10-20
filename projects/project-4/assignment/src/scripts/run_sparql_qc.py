@@ -9,7 +9,7 @@ import sys
 
 BASE_DIR = Path(__file__).resolve().parents[2]   # go up from /src/scripts → /src → /assignment
 print(BASE_DIR)
-DATA     = BASE_DIR / "src" / "data/final/readings_normalized_merged_inferred.ttl"
+DATA     = BASE_DIR / "src" / "data/interim/readings_normalized.ttl"
 QUERIES  = BASE_DIR / "src" / "sparql"
 
 SHOW_LIMIT = 10

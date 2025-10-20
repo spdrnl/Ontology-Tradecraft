@@ -1,20 +1,86 @@
 @prefix : <http://www.newfoundland.nl/otc/project-4/> .
+@prefix ns1: <https://www.commoncoreontologies.org/> .
+@prefix ns2: <http://purl.obolibrary.org/obo/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 : a owl:Ontology ;
     rdfs:label "Sensor Data Ontology"@en ;
     rdfs:comment "An ontology for sensor readings and measurements"@en .
 
+:mice-inst--IbRhFwLS77aofkJB3xeObbOC7U a ns1:ont00001364 ;
+    rdfs:label "Observation A-000005 on Pump-A1 by sensor_A at 2024-03-18 12:07:00+00:00"@en ;
+    ns1:ont00001769 101325.0 ;
+    ns1:ont00001863 :unit-Pascal ;
+    ns1:ont00001966 :quality-62eQHP4wxBtcE33OakrY5-brCvg .
+
+:mice-inst-5zrwSb4FxEGOXaAfoyzcNqVm_48 a ns1:ont00001364 ;
+    rdfs:label "Observation A-000006 on Pump-A1 by sensor_A at 2024-03-18 12:08:00+00:00"@en ;
+    ns1:ont00001769 "NaN"^^xsd:decimal ;
+    ns1:ont00001863 :unit-Pascal ;
+    ns1:ont00001966 :quality-62eQHP4wxBtcE33OakrY5-brCvg .
+
+:mice-inst-8Sn_4nO2viiaxzY7aRHqT0n2Z2s a ns1:ont00001364 ;
+    rdfs:label "Observation A-000003 on Chiller-3 by sensor_A at 2024-03-18 12:01:00+00:00"@en ;
+    ns1:ont00001769 20000.0 ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-E3XGfkBitgux7_rmED_eD5cnNBk .
+
+:mice-inst-9b1fzC2QXLRL9K4J4mAnTNOIqLY a ns1:ont00001364 ;
+    rdfs:label "Observation B-000003 on Chiller-3 by sensor_B at 2024-03-18 12:01:00+00:00"@en ;
+    ns1:ont00001769 19500.0 ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-E3XGfkBitgux7_rmED_eD5cnNBk .
+
+:mice-inst-Qw8rT21pvdGgP4tRYfvrKmToOhw a ns1:ont00001364 ;
+    rdfs:label "Observation B-000001 on Boiler-07 by sensor_B at 2024-03-17 23:03:00+00:00"@en ;
+    ns1:ont00001769 100000.0 ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-UQCjFCArJKh5mpKccwu4ryT4UgA .
+
+:mice-inst-RB9ABMuaqNJaJY8B55Z8efGz5qY a ns1:ont00001364 ;
+    rdfs:label "Observation A-000001 on Boiler-07 by sensor_A at 2024-03-17 23:03:00+00:00"@en ;
+    ns1:ont00001769 100000.0 ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-UQCjFCArJKh5mpKccwu4ryT4UgA .
+
+:mice-inst-WRJra1K2PQM3B5hOiC7CGFoJPDg a ns1:ont00001364 ;
+    rdfs:label "Observation A-000004 on Chiller-3 by sensor_A at 2024-03-18 12:06:00+00:00"@en ;
+    ns1:ont00001769 "NaN"^^xsd:decimal ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-E3XGfkBitgux7_rmED_eD5cnNBk .
+
+:mice-inst-_UIwCTm1xGauvaaj96yoDeehqgY a ns1:ont00001364 ;
+    rdfs:label "Observation B-000004 on Chiller-3 by sensor_B at 2024-03-18 12:06:00+00:00"@en ;
+    ns1:ont00001769 "NaN"^^xsd:decimal ;
+    ns1:ont00001863 :unit-Celsius ;
+    ns1:ont00001966 :quality-E3XGfkBitgux7_rmED_eD5cnNBk .
+
+:mice-inst-fkVd3tmHHpJ-PTQkMf9RdKwrhEo a ns1:ont00001364 ;
+    rdfs:label "Observation A-000002 on Boiler-07 by sensor_A at 2024-03-17 23:04:00+00:00"@en ;
+    ns1:ont00001769 101352.972 ;
+    ns1:ont00001863 :unit-Pascal ;
+    ns1:ont00001966 :quality-UQCjFCArJKh5mpKccwu4ryT4UgA .
+
+:mice-inst-oGhejLKAP04UVr1K9QKrKjXeSJA a ns1:ont00001364 ;
+    rdfs:label "Observation B-000002 on Boiler-07 by sensor_B at 2024-03-17 23:04:00+00:00"@en ;
+    ns1:ont00001769 101325.0 ;
+    ns1:ont00001863 :unit-Pascal ;
+    ns1:ont00001966 :quality-UQCjFCArJKh5mpKccwu4ryT4UgA .
+
 :observed-entity-62eQHP4wxBtcE33OakrY5-brCvg a :ObservedEntity ;
-    rdfs:label "Pump-A1"@en .
+    rdfs:label "Observed entity {observed_entity_id}"@en ;
+    ns2:BFO_0000196 :quality-62eQHP4wxBtcE33OakrY5-brCvg .
 
 :observed-entity-E3XGfkBitgux7_rmED_eD5cnNBk a :ObservedEntity ;
-    rdfs:label "Chiller-3"@en .
+    rdfs:label "Observed entity {observed_entity_id}"@en ;
+    ns2:BFO_0000196 :quality-E3XGfkBitgux7_rmED_eD5cnNBk .
 
 :observed-entity-UQCjFCArJKh5mpKccwu4ryT4UgA a :ObservedEntity ;
-    rdfs:label "Boiler-07"@en .
+    rdfs:label "Observed entity {observed_entity_id}"@en ;
+    ns2:BFO_0000196 :quality-UQCjFCArJKh5mpKccwu4ryT4UgA .
 
 :sensor-9c_RULezQrXuHvj7N7mli-YBcEw a :Sensor ;
     rdfs:label "Sensor sensor_A on Chiller-3"@en .
@@ -61,15 +127,30 @@
 :sensor-pWIQAuhWp6Wjvyhwd6U4DS25FEs a :Sensor ;
     rdfs:label "Sensor sensor_B on Chiller-3"@en .
 
-:ObservedEntity a owl:Class ;
+:ObservedEntity a ns1:ont00000995 ;
     rdfs:label "Observed entity"@en ;
-    skos:definition "An entity that is measured by a sensor."@en .
+    skos:definition "An observed entity is an entity that is measured by a sensor."@en .
 
-:Sensor a owl:Class ;
+:quality-62eQHP4wxBtcE33OakrY5-brCvg a ns2:BFO_0000019 ;
+    rdfs:label "Quality for Pump-A1"@en .
+
+:unit-Pascal a ns1:ont00001559 ;
+    rdfs:label "Pascal measurement unit"@en .
+
+:Sensor a ns1:ont00000569 ;
     rdfs:label "Sensor"@en ;
-    skos:definition "A mechanical device that can generate a measurement."@en .
+    skos:definition "A sensor is a mechanical device that can generate a measurement."@en .
 
-:SensorObservation a owl:Class ;
+:quality-E3XGfkBitgux7_rmED_eD5cnNBk a ns2:BFO_0000019 ;
+    rdfs:label "Quality for Chiller-3"@en .
+
+:quality-UQCjFCArJKh5mpKccwu4ryT4UgA a ns2:BFO_0000019 ;
+    rdfs:label "Quality for Boiler-07"@en .
+
+:unit-Celsius a ns1:ont00001606 ;
+    rdfs:label "Celsius measurement unit"@en .
+
+:SensorObservation a ns1:ont00001364 ;
     rdfs:label "Sensor observation"@en ;
-    skos:definition "A sensor measurement of an entity at a certain time."@en .
+    skos:definition "A sensor observation is a measurement of an entity."@en .
 
