@@ -50,8 +50,10 @@ def infer_file(input_file: str, output_file: str, reasoner: str) -> None:
     )
 
 def main():
-    input_file = DATA_FINAL / "readings_normalized_merged.ttl"
-    output_file = DATA_FINAL / "readings_normalized_merged_inferred.ttl"
+    #input_file = DATA_FINAL / "readings_normalized_merged.ttl"
+    #output_file = DATA_FINAL / "readings_normalized_merged_inferred.ttl"
+    input_file = ASSIGNMENT_ROOT / "test.ttl"
+    output_file = ASSIGNMENT_ROOT / "test_reasoned.ttl"
     infer_file(input_file, output_file, "hermit")
 
 

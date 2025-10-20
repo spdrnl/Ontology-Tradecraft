@@ -33,7 +33,7 @@ ex:ArtifactHasSDCShape
 #################################################################
 
 #################################################################
-# 5) No empty values in literals
+# 5) No empty values in li/home/sanne/Projects/Ontology-Tradecraft/projects/project-4/assignment/robot-test.shterals
 #################################################################
 
 #################################################################

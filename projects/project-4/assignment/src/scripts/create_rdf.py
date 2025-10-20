@@ -13,6 +13,20 @@ from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
+# Material Artifact https://www.commoncoreontologies.org/ont00000995
+# quality http://purl.obolibrary.org/obo/BFO_0000019
+# Temperature https://www.commoncoreontologies.org/ont00000441
+# MICE https://www.commoncoreontologies.org/ont00001364
+# Nominal MICE https://www.commoncoreontologies.org/ont00000293
+# Ratio measurement https://www.commoncoreontologies.org/ont00001022
+# Sensor https://www.commoncoreontologies.org/ont00000569
+# bearer of http://purl.obolibrary.org/obo/BFO_0000196
+# is a measurement of https://www.commoncoreontologies.org/ont00001966
+# is a ratio measurement of https://www.commoncoreontologies.org/ont00001983
+# is a ordinal meseasurement of https://www.commoncoreontologies.org/ont00001811
+# has decimal value https://www.commoncoreontologies.org/ont00001769
+# uses measurement unit https://www.commoncoreontologies.org/ont00001863
+
 # Path settings
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA_SOURCE = SRC_ROOT / "data" / "source"
