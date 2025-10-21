@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
-"""
-Normalize heterogeneous measurement feeds to a common CSV:
-observation_id, observed_entity_id, quantity_kind, value, unit_code, timestamp, source
 
-Run:
-  python scripts/normalize_readings.py
-Outputs:
-  data/interim/readings_normalized.csv
-"""
-
-import csv
 import json
 import logging
 import math
 import pathlib
 from datetime import datetime
-import pytz
 
 import pandas as pd
+import pytz
+
+pd.options.display.max_columns = None
+pd.options.display.max_rows = None
 
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA_SOURCE = SRC_ROOT / "data" / "source"
@@ -31,16 +24,17 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 # Controlled vocab & maps
 # ------------------------
 
-# TODO: Adjust to your course's vocabulary.
+
 KIND_MAP = {
     # sensor_A.csv -> normalized
     "temperature": "temperature",
     "pressure": "pressure",
     # sensor_B.json "kind" values
     "temp": "temperature",
+    "resistance": "resistance",
+    "voltage": "voltage"
 }
 
-# TODO: Normalize unit spellings to a compact code (no IRIs yet—this is pre-ontology).
 UNIT_MAP = {
     "F": "F",
     "°F": "F",
@@ -52,36 +46,40 @@ UNIT_MAP = {
     "kpa": "kPa",
     "KPA": "kPa",
     "kPa": "kPa",
+    "pa": "Pa",
+    "PA": "Pa",
+    "Volt": "volt",
+    "VOLT": "volt",
+    "Ohm": "ohm",
+    "OHM": "ohm",
+
 }
 
-# Basic sanity bounds (pre-ETL triage). Adjust as needed.
-BOUNDS = {
-    "temperature": {"min": -100.0, "max": 212.0},  # in reported units (mixed!)
-    "pressure": {"min": 0.0, "max": 1_000_000.0},
-}
 
 # ------------------------
 # Utility functions
 # ------------------------
 
-def _canon_entity_id(s: str) -> str:
+def standardize_artifact_id(artifact_id: str) -> str:
     """Trim, collapse spaces, standardize hyphen/space pattern."""
-    if s is None:
+    if artifact_id is None:
         return None
-    s = str(s).strip()
+    artifact_id = str(artifact_id).strip()
     # collapse multiple spaces
-    s = " ".join(s.split())
+    artifact_id = " ".join(artifact_id.split())
     # normalize "Chiller 3" -> "Chiller-3"
-    s = s.replace(" ", "-")
-    return s
+    artifact_id = artifact_id.replace(" ", "-")
+    return artifact_id
 
-def _canon_kind(s: str) -> str:
+
+def standardize_kind(s: str) -> str:
     if s is None:
         return None
     key = str(s).strip().lower()
     return KIND_MAP.get(key, key)  # leave unknowns for later review
 
-def _canon_unit(s: str) -> str:
+
+def standardize_unit(s: str) -> str:
     if s is None:
         return None
     key = str(s).strip()
@@ -89,8 +87,8 @@ def _canon_unit(s: str) -> str:
     mapped = UNIT_MAP.get(key, UNIT_MAP.get(key.upper(), UNIT_MAP.get(key.lower())))
     return mapped if mapped else key
 
-def _parse_timestamp_any(s: str) -> pd.Timestamp:
-    """Try multiple formats; force UTC. Leave NaT if unparseable."""
+
+def parse_iso_timestamp_string(s: str) -> pd.Timestamp:
     if s is None or str(s).strip() == "":
         return pd.NaT
     try:
@@ -99,14 +97,15 @@ def _parse_timestamp_any(s: str) -> pd.Timestamp:
     except Exception:
         return pd.NaT
 
-def _coerce_float(x):
-    """Return float or NaN; strings like 'not_a_number' become NaN."""
+
+def cast_to_float(x):
     try:
         if x is None or (isinstance(x, str) and x.strip() == ""):
             return math.nan
         return float(x)
     except Exception:
         return math.nan
+
 
 # ------------------------
 # Normalizers per source
@@ -126,135 +125,76 @@ def local_time_to_utc(local_time_str):
 
     return utc_dt
 
+
 def normalize_csv_sensor_a(path: pathlib.Path) -> pd.DataFrame:
-    """
-    sensor_A.csv columns:
-      Device Name, Reading Type, Reading Value, Units, Time (Local)
-    Encoding:
-      Windows-1252 (cp1252)
-    """
-    logging.info(f"Reading {path.name} (cp1252)")
-    df = pd.read_csv(path, encoding="cp1252")
+    logging.info(f"Reading {path.name}")
+    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=["", "NA", "NaN"])
 
     df = df.rename(
         columns={
-            "Device Name": "observed_entity_id",
-            "Reading Type": "quantity_kind",
+            "Device Name": "artifact_id",
+            "Reading Type": "sdc_kind",
             "Reading Value": "value",
-            "Units": "unit_code",
+            "Units": "unit_label",
             "Time (Local)": "timestamp",
         }
     )
 
+    # Keep only canonical columns that exist
+    df = df[[c for c in ["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"] if c in df.columns]]
+
     # Canonicalize
-    df["observed_entity_id"] = df["observed_entity_id"].map(_canon_entity_id)
-    df["quantity_kind"] = df["quantity_kind"].map(_canon_kind)
-    df["unit_code"] = df["unit_code"].map(_canon_unit)
-    df["value"] = df["value"].map(_coerce_float)
+    df["artifact_id"] = df["artifact_id"].map(standardize_artifact_id)
+    df["sdc_kind"] = df["sdc_kind"].map(standardize_kind)
+    df["value"] = df["value"].map(cast_to_float)
     df["timestamp"] = df["timestamp"].map(local_time_to_utc)
 
-    # Add source
-    df["source"] = "sensor_A"
-
-    # Order & select
-    df = df[["observed_entity_id", "quantity_kind", "value", "unit_code", "timestamp", "source"]]
     return df
 
 
 def normalize_json_sensor_b(path: pathlib.Path) -> pd.DataFrame:
-    """
-    sensor_B.json structure:
-    {
-      "site": "...",
-      "stream_id": "...",
-      "readings": [
-        {"entity_id": "...", "data": [{"kind": "...", "value": ..., "unit": "...", "time": "..."}]}
-      ]
-    }
-    """
     logging.info(f"Reading {path.name} (utf-8)")
     with open(path, "r", encoding="utf-8") as f:
         j = json.load(f)
 
     rows = []
     for entry in j.get("readings", []):
-        entity = _canon_entity_id(entry.get("entity_id"))
+        entity = standardize_artifact_id(entry.get("entity_id"))
         for d in entry.get("data", []):
-            kind = _canon_kind(d.get("kind"))
-            unit = _canon_unit(d.get("unit"))
-            val = _coerce_float(d.get("value"))
-            ts = _parse_timestamp_any(d.get("time"))
+            unit = standardize_unit(d.get("unit"))
+            val = cast_to_float(d.get("value"))
+            kind = standardize_kind(d.get("kind"))
+            ts = parse_iso_timestamp_string(d.get("time"))
             rows.append(
                 {
-                    "observed_entity_id": entity,
-                    "quantity_kind": kind,
+                    "artifact_id": entity,
+                    "sdc_kind": kind,
+                    "unit_label": unit,
                     "value": val,
-                    "unit_code": unit,
-                    "timestamp": ts,
-                    "source": "sensor_B",
+                    "timestamp": ts
                 }
             )
     df = pd.DataFrame.from_records(rows)
     return df
 
-# ------------------------
-# Validation / triage helpers
-# ------------------------
-
-def quick_triage(df: pd.DataFrame) -> None:
-    """Lightweight checks BEFORE ontology. Print warnings, not hard failures."""
-    # Types
-    if df["value"].dtype == "object":
-        logging.warning("Column 'value' is object dtype (mixed). Ensure numeric coercion happened.")
-
-    # Missingness
-    miss = df.isna().sum()
-    if miss.get("value", 0) > 0:
-        logging.warning(f"Missing numeric values: {miss['value']}")
-    if miss.get("timestamp", 0) > 0:
-        logging.warning(f"Unparseable timestamps (NaT): {miss['timestamp']}")
-
-    # Unknown kinds/units
-    unk_kinds = set(df["quantity_kind"].dropna()) - set(KIND_MAP.values())
-    if unk_kinds:
-        logging.warning(f"Unknown quantity_kind values present: {sorted(unk_kinds)}")
-
-    # Sanity bounds (rough, pre-conversion)
-    for kind, bounds in BOUNDS.items():
-        sub = df[df["quantity_kind"] == kind]
-        if not sub.empty:
-            too_low = sub["value"] < bounds["min"]
-            too_high = sub["value"] > bounds["max"]
-            if too_low.any() or too_high.any():
-                logging.warning(
-                    f"{kind}: found out-of-range values "
-                    f"(<{bounds['min']} or >{bounds['max']}) — check units/parsing."
-                )
-
-def add_observation_ids(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
-    """Concatenate and add stable observation_id like A-000001 / B-000001."""
-    df_a = df_a.copy()
-    df_b = df_b.copy()
-    df_a.insert(0, "observation_id", ["A-" + str(i + 1).zfill(6) for i in range(len(df_a))])
-    df_b.insert(0, "observation_id", ["B-" + str(i + 1).zfill(6) for i in range(len(df_b))])
-    return pd.concat([df_a, df_b], ignore_index=True)
-
-# ------------------------
-# Main
-# ------------------------
 
 def standardize_to_si(df):
     """Convert units to SI"""
-    mask = df.unit_code == 'F'
+    mask = df.unit_label == 'F'
     df.loc[mask, 'value'] = (df.loc[mask, 'value'] - 32) * 5 / 9
-    df.loc[mask, 'unit_code'] = 'C'
+    df.loc[mask, 'unit_label'] = 'C'
 
     # Convert PSI values to kPa
-    mask_psi = df.unit_code == 'psi'
-    df.loc[mask_psi, 'value'] = df.loc[mask_psi, 'value'] * 6.89476
-    df.loc[mask_psi, 'unit_code'] = 'kPa'
+    mask_psi = df.unit_label == 'psi'
+    df.loc[mask_psi, 'value'] = df.loc[mask_psi, 'value'] * 6.89476 * 1000
+    df.loc[mask_psi, 'unit_label'] = 'Pa'
 
+    # Convert kPa values to Pa
+    mask_psi = df.unit_label == 'kPa'
+    df.loc[mask_psi, 'value'] = df.loc[mask_psi, 'value'] * 1000
+    df.loc[mask_psi, 'unit_label'] = 'Pa'
     return df
+
 
 def main():
     a_path = DATA_SOURCE / "sensor_A.csv"
@@ -266,32 +206,34 @@ def main():
     df_a = normalize_csv_sensor_a(a_path)
     df_b = normalize_json_sensor_b(b_path)
 
-    df = add_observation_ids(df_a, df_b)
+    # drop NaN
+    df_a = df_a.dropna(subset=["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"])
+    df_b = df_b.dropna(subset=["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"])
 
+    df = pd.concat([df_a, df_b], ignore_index=True)
+
+    for col in ["artifact_id", "sdc_kind", "unit_label"]:
+        df[col] = df[col].astype(str).str.strip()
+
+    # numeric
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+
+    # Timestamps are parsed per source
+
+    # unit label standardization
+    df["unit_label"] = df["unit_label"].map(standardize_unit)
+
+    # sort values
+    df = df.sort_values(["artifact_id", "timestamp"]).reset_index(drop=True)
+
+    # Standardize units to SI further (psi to Pa, kPa to Pa)
     df = standardize_to_si(df)
 
-    # Quick triage (prints warnings)
-    quick_triage(df)
+    # Output
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT_CSV, index=False)
+    print(f"Wrote {OUT_CSV} with {len(df)} rows.")
 
-    # Enforce column order
-    cols = ["observation_id", "observed_entity_id", "quantity_kind", "value", "unit_code", "timestamp", "source"]
-    df = df[cols]
-
-    # Final: write CSV with explicit encoding & ISO dates
-    # NOTE: timestamps will be written as ISO strings by pandas.
-    df.to_csv(OUT_CSV, index=False, quoting=csv.QUOTE_MINIMAL)
-
-    # Minimal summary students can expand:
-    print("\n=== Normalized Summary ===")
-    print(df.dtypes)
-    print("\nCounts by quantity_kind:")
-    print(df["quantity_kind"].value_counts(dropna=False))
-    print("\nCounts by unit_code:")
-    print(df["unit_code"].value_counts(dropna=False))
-    print("\nMissing values per column:")
-    print(df.isna().sum())
-    print("\nBasic stats by quantity_kind:")
-    print(df.groupby("quantity_kind")["value"].agg(["count", "min", "max", "mean"]).to_string())
 
 if __name__ == "__main__":
     main()
