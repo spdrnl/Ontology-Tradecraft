@@ -37,7 +37,7 @@ jobs:
       # -------------------------------------------------------------
       # (1) ETL validation
       # -------------------------------------------------------------
-  
+
       - name: 🧪 Run ETL
         run: python src/scripts/normalize_readings.py
 
@@ -56,7 +56,7 @@ jobs:
           import pandas as pd
 
           CSV = Path("src/data/readings_normalized.csv")
-          assert CSV.exists(), "❌ Missing src/data/readings_normalized.csv"
+          assert CSV.exists(), "❌ Missing src/data/readings_normalized.csv" 
 
           # Schema check
           df = pd.read_csv(CSV, dtype=str, keep_default_na=False)
