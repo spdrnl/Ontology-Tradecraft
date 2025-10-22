@@ -419,7 +419,7 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
     pa_instance_q_name = "Pa"
     g.add((ns[pa_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
     g.add((ns[pa_instance_q_name], RDFS.label, Literal("Pa measurement unit instance", lang='en')))
-    logger.info("Created ohm measurement unit instance.")
+    logger.info("Created Pa measurement unit instance.")
     pa_instance_uri = ns[pa_instance_q_name]
 
     # Celsius instance https://www.commoncoreontologies.org/ont00001606
@@ -427,15 +427,15 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
     celsius_instance_q_name = "C"
     g.add((ns[celsius_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
     g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
-    logger.info("Created ohm measurement unit instance.")
+    logger.info("Created Celsius measurement unit instance.")
     celsius_instance_uri = ns[celsius_instance_q_name]
 
     # Volt instance https://www.commoncoreontologies.org/ont00001450
     #volt_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001450")
     volt_instance_q_name = "C"
     g.add((ns[volt_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[volt_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
-    logger.info("Created ohm measurement unit instance.")
+    g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
+    logger.info("Created volt measurement unit instance.")
     volt_instance_uri = ns[volt_instance_q_name]
 
     # Create ohm measurement unit class
