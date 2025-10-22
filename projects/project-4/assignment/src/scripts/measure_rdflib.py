@@ -335,11 +335,11 @@ def create_sensors(df: DataFrame, g: Graph, ns: Namespace):
 def create_observed_entities(df: DataFrame, g: Graph, ns: Namespace):
     # Material Artifact https://www.commoncoreontologies.org/ont00000995
     observed_entity_class_name = OBSERVED_ENTITY_CLASS_NAME
-    g.add((ns[observed_entity_class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00000995")))
-    g.add((ns[observed_entity_class_name], RDFS.label, label_from_class(observed_entity_class_name)))
-    g.add((ns[observed_entity_class_name], SKOS.definition,
-           Literal("An observed entity is an entity that is measured by a sensor.", lang='en')))
-    logger.info("Created ObservedEntity class.")
+    # g.add((ns[observed_entity_class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00000995")))
+    # g.add((ns[observed_entity_class_name], RDFS.label, label_from_class(observed_entity_class_name)))
+    # g.add((ns[observed_entity_class_name], SKOS.definition,
+    #        Literal("An observed entity is an entity that is measured by a sensor.", lang='en')))
+    # logger.info("Created ObservedEntity class.")
 
     n = 0
     artifact_ids = df['artifact_id'].unique()
@@ -400,7 +400,7 @@ def create_qualities(df: DataFrame, g: Graph, ns: Namespace):
         # quality http://purl.obolibrary.org/obo/BFO_0000019
         quality_instance_q_name = unique_qname("quality", [row.artifact_id, row.sdc_kind])
         label = f"Quality instance for {row.artifact_id} of kind {row.sdc_kind}"
-        g.add((ns[quality_instance_q_name], RDF.type, instance_type))
+        g.add((ns[quality_instance_q_name], RDF.type, URIRef("http://purl.obolibrary.org/obo/BFO_0000020")))
         g.add((ns[quality_instance_q_name], RDFS.label, Literal(label, lang='en')))
 
         # Add bearer of
@@ -479,7 +479,7 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 
         # uses measurement unit https://www.commoncoreontologies.org/ont00001863
         g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001863"),
-               type_uri))
+               URIRef("https://www.commoncoreontologies.org/ont00000120")))
 
         # Is measurement of quality
         # is a measurement of https://www.commoncoreontologies.org/ont00001966
