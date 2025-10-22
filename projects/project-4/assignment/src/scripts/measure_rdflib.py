@@ -347,7 +347,7 @@ def create_observed_entities(df: DataFrame, g: Graph, ns: Namespace):
         n += 1
         observed_entity_q_name = unique_qname(observed_entity_class_name, [artifact_id])
         label = f"Observed entity {artifact_id}"
-        g.add((ns[observed_entity_q_name], RDF.type, ns[observed_entity_class_name]))
+        g.add((ns[observed_entity_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000995")))
         g.add((ns[observed_entity_q_name], RDFS.label, Literal(label, lang='en')))
 
     logger.info("Created {n} Observed Entity instances.")
