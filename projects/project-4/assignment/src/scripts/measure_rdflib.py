@@ -19,10 +19,9 @@ logger = logging.getLogger(__name__)
 
 # Path settings
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATA_SOURCE = SRC_ROOT / "data" / "source"
-DATA_INTERIM = SRC_ROOT / "data" / "interim"
-INPUT_PATH = DATA_INTERIM / "readings_normalized.csv"
-OUTPUT_PATH = DATA_INTERIM / "readings_normalized.ttl"
+DATA_SOURCE = SRC_ROOT / "data"
+INPUT_PATH = DATA_SOURCE / "readings_normalized.csv"
+OUTPUT_PATH = SRC_ROOT / "measure_cco.ttl"
 
 # Namespace settings
 DEFAULT_NS = Namespace("http://www.newfoundland.nl/otc/project-4/")

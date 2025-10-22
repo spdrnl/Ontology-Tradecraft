@@ -6,8 +6,6 @@ from rdflib import Graph, Namespace
 
 # Path settings
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATA_INTERIM = SRC_ROOT / "data" / "interim"
-DATA_FINAL = SRC_ROOT / "data" / "final"
 
 def load_graph(ttl_paths: List[Path]) -> Graph:
     """
@@ -38,7 +36,7 @@ def load_graph(ttl_paths: List[Path]) -> Graph:
 
 def main():
     # load the ttl's
-    ttl_paths = [DATA_INTERIM / "readings_normalized.ttl", DATA_INTERIM / "cco_merged.ttl"]
+    ttl_paths = [SRC_ROOT / "measure_cco_inferred.ttl", SRC_ROOT / "cco_merged.ttl"]
     graph = load_graph(ttl_paths)
 
     # set the default namespace
@@ -46,7 +44,7 @@ def main():
     graph.bind("", default_ns)
 
     # output the graph
-    output_path = DATA_FINAL / "readings_normalized_merged.ttl"
+    output_path = SRC_ROOT / "measure_cco_inferred_merged.ttl"
     graph.serialize(str(output_path), format="turtle")
     print(f"Merged graph saved to {output_path}")
 

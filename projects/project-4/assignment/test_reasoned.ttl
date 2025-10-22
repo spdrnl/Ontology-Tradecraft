@@ -21,7 +21,17 @@
 
 ###  http://www.newfoundland.nl/otc/project-4/a
 default1:a rdf:type owl:Class ;
+           owl:equivalentClass default1:b ;
            rdfs:subClassOf owl:Thing .
+
+
+###  http://www.newfoundland.nl/otc/project-4/b
+default1:b rdf:type owl:Class ;
+           owl:equivalentClass default1:c .
+
+
+###  http://www.newfoundland.nl/otc/project-4/c
+default1:c rdf:type owl:Class .
 
 
 ###  http://www.newfoundland.nl/otc/project-4/b

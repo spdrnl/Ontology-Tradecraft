@@ -13,10 +13,8 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATA_SOURCE = SRC_ROOT / "data" / "source"
-DATA_INTERIM = SRC_ROOT / "data" / "interim"
-DATA_INTERIM.mkdir(parents=True, exist_ok=True)
-OUT_CSV = DATA_INTERIM / "readings_normalized.csv"
+DATA_SOURCE = SRC_ROOT / "data"
+OUT_CSV = DATA_SOURCE / "readings_normalized.csv"
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
