@@ -59,7 +59,7 @@ jobs:
           assert CSV.exists(), "❌ Missing src/data/readings_normalized.csv" 
 
           # Schema check
-          df = pd.read_csv(CSV, dtype=str, keep_default_na=False)
+          df = pd.read_csv(CSV, dtype=str, keep_default_na=False) 
           exp_cols = ["artifact_id","sdc_kind","unit_label","value","timestamp"]
           assert list(df.columns) == exp_cols, f"❌ Bad header. Got {list(df.columns)}"
 
