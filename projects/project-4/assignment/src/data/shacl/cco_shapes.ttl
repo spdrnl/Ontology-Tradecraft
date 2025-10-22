@@ -56,19 +56,19 @@ ex:MiceMeasuresExactlyOneSDC
 ex:MiceMustHaveOneUnitAndOneNumericValue
   a sh:NodeShape ;
   sh:targetClass cco:ont00001163 ;
-#  sh:property [
-#    sh:path cco:ont00001769 ;
-#    sh:minCount 1 ;
-#    sh:maxCount 1 ;
-#    sh:class xsd:double ;
-#    sh:message "MICE must have one numeric value (completeness)." ;
-#    sh:severity sh:Violation
-#  ];
   sh:property [
-    sh:path :ont00001863 ;
+    sh:path cco:ont00001769 ;
     sh:minCount 1 ;
     sh:maxCount 1 ;
-    sh:class cco:ont00000120 ;
+    sh:value  xsd:decimal ;
+    sh:message "MICE must have one numeric value (completeness)." ;
+    sh:severity sh:Violation
+  ] ;
+  sh:property [
+    sh:path cco:ont00001863 ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:value cco:ont00000120 ;
     sh:message "MICE must have one unit." ;
     sh:severity sh:Violation
   ] .
@@ -80,13 +80,48 @@ ex:NoEmptyLiteralsShape a sh:NodeShape ;
     sh:property [
         sh:path cco:ont00001769 ;
         sh:minLength 1 ;
-        sh:message "Literal values cannot be empty" ;
+        sh:message "Literal values cannot be empty"
     ] .
 
 ##################################################################
 ## 6) Unit must match SDC being measured
 ##################################################################
-#
+ex:UnitMustMatchSDCMeasuredOhm a sh:NodeShape ;
+    sh:targetNode :ohm ;
+    sh:property [
+        sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
+        sh:class :ElectricalResistance ;
+        sh:minCount 1;
+        sh:message "Ohm unit must match resistance quality."
+    ] .
+
+ex:UnitMustMatchSDCMeasuredVolt a sh:NodeShape ;
+    sh:targetNode cco:ont00001450 ;
+    sh:property [
+        sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
+        sh:class :Voltage ;
+        sh:minCount 1;
+        sh:message "Volt unit must match voltage quality."
+    ] .
+
+ex:UnitMustMatchSDCMeasuredPa a sh:NodeShape ;
+    sh:targetNode cco:ont00001559 ;
+    sh:property [
+        sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
+        sh:class cco:ont00000380 ;
+        sh:minCount 1;
+        sh:message "Ohm unit must match resistance quality."
+    ] .
+
+ex:UnitMustMatchSDCMeasuredTemperature a sh:NodeShape ;
+    sh:targetNode cco:ont00001606 ;
+    sh:property [
+        sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
+        sh:class cco:ont00000441 ;
+        sh:minCount 1;
+        sh:message "Temperature unit must match temperature quality."
+    ] .
+
 #################################################################
 # 7) No duplicate MICE
 #################################################################
@@ -122,26 +157,24 @@ ex:NoDuplicateMice a sh:NodeShape ;
             }
         """ ;
     ] .
-##################################################################
-## 8) No dangling/mistyped nodes
-##################################################################
-##ex:NoDanglingOrMistypedNodes a sh:NodeShape ;
-##    sh:targetClass ex:MyClass ;
-##    sh:sparql [
-##        sh:message "The combination of instance, value, and measurement unit must be unique" ;
-##        sh:select """
-##            PREFIX ex: <http://example.org/>
-##            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-##
-##            SELECT $this ?other
-##            WHERE {
-##                $this ex:hasValue ?value ;
-##                      ex:measurementUnit ?unit .
-##
-##                ?other ex:hasValue ?value ;
-##                       ex:measurementUnit ?unit .
-##
-##                FILTER($this != ?other)
-##            }
-##        """ ;
-##    ] .
+#################################################################
+# 8) No dangling/mistyped nodes
+#################################################################
+ex:NoDanglingOrMistypedNodes a sh:NodeShape ;
+    sh:targetSubjectsOf rdf:type ;
+    sh:sparql [
+        sh:message "Instance '{$this}' uses undefined class '{?class}' (possible typo)" ;
+        sh:select """
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            SELECT $this
+            WHERE {
+                $this a ?class1 .
+                FILTER (!STRSTARTS(STR(?class1), "http://www.w3.org/"))
+                FILTER NOT EXISTS{
+                    $this a [ rdfs:subClassOf ?class2].
+                }
+            }
+            ORDER BY ASC(UCASE(str($this)))
+        """ ;
+    ] .

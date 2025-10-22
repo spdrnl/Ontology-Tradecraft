@@ -378,7 +378,7 @@ def create_qualities(df: DataFrame, g: Graph, ns: Namespace):
     g.add((ns[resistance_class_name], SKOS.definition,
            Literal("A electrical resistance is a measure of its opposition to the flow of electric current.",
                    lang='en')))
-    resitance_uri = ns[voltage_class_name]
+    resitance_uri = ns[resistance_class_name]
     logger.info("Created electrical resistance class.")
 
     # Create instances
@@ -454,15 +454,16 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
         # Create observation instance
         # MICE https://www.commoncoreontologies.org/ont00001163
         instance_name = unique_qname("sensor-observation",
-                                     [row.artifact_id, row.unit_label, row.timestamp])
+                                     [row.artifact_id, row.unit_label, row.timestamp, str(row.value), row.sdc_kind])
         label = f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} at {row.timestamp} of {row.value}"
         g.add((ns[instance_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001163")))
         g.add((ns[instance_name], RDFS.label, Literal(label, lang='en')))
 
         # Add value
         # has double value https://www.commoncoreontologies.org/ont00001770
+        # has decimal value https://www.commoncoreontologies.org/ont00001769
         g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001769"),
-               Literal(f"{row.value:5.4f}", datatype=XSD.double, normalize=False)))
+               Literal(row.value, datatype=XSD.decimal, normalize=False)))
 
         # Add uses measurement unit
         if (row.unit_label == "Pa"):
