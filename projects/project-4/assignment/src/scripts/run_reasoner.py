@@ -55,8 +55,8 @@ def infer_file(input_file: str, output_file: str, reasoner: str) -> None:
 def main():
     input_file = SRC_ROOT / "measure_cco.ttl"
     output_file = SRC_ROOT / "measure_cco_inferred.ttl"
-    input_file = ASSIGNMENT_ROOT / "test.ttl"
-    output_file = ASSIGNMENT_ROOT / "test_reasoned.ttl"
+    # input_file = ASSIGNMENT_ROOT / "test.ttl"
+    # output_file = ASSIGNMENT_ROOT / "test_reasoned.ttl"
     print(output_file)
     infer_file(input_file, output_file, "hermit")
 

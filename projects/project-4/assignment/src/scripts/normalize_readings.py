@@ -197,18 +197,25 @@ def standardize_to_si(df):
 def main():
     a_path = DATA_SOURCE / "sensor_A.csv"
     b_path = DATA_SOURCE / "sensor_B.json"
+    c_path = DATA_SOURCE / "sensor_C.csv"
 
-    if not a_path.exists() or not b_path.exists():
-        raise SystemExit(f"Missing input files in {DATA_SOURCE}: sensor_A.csv and/or sensor_B.json")
+    print("[paths] A:", a_path)
+    print("[paths] B:", b_path)
+    print("[paths] C:", c_path)
+
+    if not a_path.exists() or not b_path.exists() or not c_path.exists():
+        logging.error(f"Missing one or more input files: {a_path}, {b_path}, {c_path}")
 
     df_a = normalize_csv_sensor_a(a_path)
     df_b = normalize_json_sensor_b(b_path)
+    df_c = normalize_csv_sensor_a(c_path)
 
     # drop NaN
     df_a = df_a.dropna(subset=["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"])
     df_b = df_b.dropna(subset=["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"])
+    df_c = df_b.dropna(subset=["artifact_id", "sdc_kind", "unit_label", "value", "timestamp"])
 
-    df = pd.concat([df_a, df_b], ignore_index=True)
+    df = pd.concat([df_a, df_b, df_c], ignore_index=True)
 
     for col in ["artifact_id", "sdc_kind", "unit_label"]:
         df[col] = df[col].astype(str).str.strip()
