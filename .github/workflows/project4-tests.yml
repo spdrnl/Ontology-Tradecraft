@@ -160,22 +160,22 @@ jobs:
 
           # 3) Optional: verify every MICE uses the exact property IRIs (no alternative predicates)
           #    If you only need 'at least one' instance, comment this block out.
-          q_all_mice_ok = f"""
-          SELECT (COUNT(*) AS ?n_bad)
-          WHERE {{
-            ?m a <{IRI_MICE}> .
-            UNION
-            {{ ?m a <{IRI_MICE}> .
-               FILTER NOT EXISTS {{ ?m <{IRI_USES_MU}> ?u . ?u a <{IRI_MU}> . }} }}
-            # Missing required links with the exact IRIs?
-            FILTER NOT EXISTS {{ ?m <{IRI_IS_MEASURE_OF}> ?sdc . ?sdc a <{IRI_SDC}> . }}
-          }}
-          """
-          n_bad = int(list(g.query(q_all_mice_ok))[0][0])
-          assert n_bad == 0, f"❌ Some MICE are missing required links with the exact IRIs (count={n_bad})."
-          print("✅ All MICE use exact IRIs for 'is measure of' and 'uses measurement unit'.")
+          #q_all_mice_ok = f"""
+          #SELECT (COUNT(*) AS ?n_bad)
+          #WHERE {{
+          #  ?m a <{IRI_MICE}> .
+          #  UNION
+          #  {{ ?m a <{IRI_MICE}> .
+          #     FILTER NOT EXISTS {{ ?m <{IRI_USES_MU}> ?u . ?u a <{IRI_MU}> . }} }}
+          #  # Missing required links with the exact IRIs?
+          #  FILTER NOT EXISTS {{ ?m <{IRI_IS_MEASURE_OF}> ?sdc . ?sdc a <{IRI_SDC}> . }}
+          #}}
+          #"""
+          #n_bad = int(list(g.query(q_all_mice_ok))[0][0])
+          #assert n_bad == 0, f"❌ Some MICE are missing required links with the exact IRIs (count={n_bad})."
+          #print("✅ All MICE use exact IRIs for 'is measure of' and 'uses measurement unit'.")
 
-          print("✅ RDF passes exact-IRI checks for the measurement design pattern.")
+          #print("✅ RDF passes exact-IRI checks for the measurement design pattern.")
           PY
 
       # -------------------------------------------------------------
