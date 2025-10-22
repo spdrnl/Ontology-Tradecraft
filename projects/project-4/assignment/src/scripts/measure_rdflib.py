@@ -427,7 +427,7 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
     celsius_instance_q_name = "C"
     g.add((ns[celsius_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
     g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
-    logger.info("Created Celsius measurement unit instances.")
+    logger.info("Created Celsius measurement unit instance.")
     celsius_instance_uri = ns[celsius_instance_q_name]
 
     # Volt instance https://www.commoncoreontologies.org/ont00001450
