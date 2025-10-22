@@ -479,7 +479,7 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 
         # uses measurement unit https://www.commoncoreontologies.org/ont00001863
         g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001863"),
-               URIRef("https://www.commoncoreontologies.org/ont00000120")))
+               type_uri))
 
         # Is measurement of quality
         # is a measurement of https://www.commoncoreontologies.org/ont00001966
