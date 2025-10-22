@@ -432,7 +432,7 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 
     # Create ohm measurement unit instance
     ohm_instance_q_name = "ohm"
-    g.add((ns[ohm_instance_q_name], RDF.type, ns[ohm_class_name]))
+    g.add((ns[ohm_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
     g.add((ns[ohm_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
     logger.info("Created ohm measurement unit instance.")
     ohm_instance_uri = ns[ohm_instance_q_name]
