@@ -90,7 +90,7 @@ def parse_timestamp_string(s: str) -> pd.Timestamp:
     if s is None or str(s).strip() == "":
         return pd.NaT
     try:
-        ts = pd.to_datetime(s, utc=True).isoformat()
+        ts = pd.to_datetime(s, utc=True).strftime('%Y-%m-%dT%H:%M:%SZ')
         return ts
     except Exception:
         return pd.NaT
@@ -119,7 +119,7 @@ def local_time_to_utc(local_time_str):
     local_dt = buffalo_tz.localize(naive_dt)
 
     # Convert to UTC
-    utc_dt = local_dt.astimezone(pytz.UTC).isoformat()
+    utc_dt = local_dt.astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     return utc_dt
 
@@ -173,6 +173,7 @@ def normalize_json_sensor_b(path: pathlib.Path) -> pd.DataFrame:
                 }
             )
     df = pd.DataFrame.from_records(rows)
+
     return df
 
 
@@ -233,8 +234,6 @@ def main():
 
     # Standardize units to SI further (psi to Pa, kPa to Pa)
     df = standardize_to_si(df)
-
-    print(df)
 
     # Output
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
