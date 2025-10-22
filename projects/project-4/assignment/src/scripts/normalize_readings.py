@@ -86,11 +86,11 @@ def standardize_unit(s: str) -> str:
     return mapped if mapped else key
 
 
-def parse_iso_timestamp_string(s: str) -> pd.Timestamp:
+def parse_timestamp_string(s: str) -> pd.Timestamp:
     if s is None or str(s).strip() == "":
         return pd.NaT
     try:
-        ts = pd.to_datetime(s, utc=True)
+        ts = pd.to_datetime(s, utc=True).isoformat()
         return ts
     except Exception:
         return pd.NaT
@@ -119,7 +119,7 @@ def local_time_to_utc(local_time_str):
     local_dt = buffalo_tz.localize(naive_dt)
 
     # Convert to UTC
-    utc_dt = local_dt.astimezone(pytz.UTC)
+    utc_dt = local_dt.astimezone(pytz.UTC).isoformat()
 
     return utc_dt
 
@@ -162,7 +162,7 @@ def normalize_json_sensor_b(path: pathlib.Path) -> pd.DataFrame:
             unit = standardize_unit(d.get("unit"))
             val = cast_to_float(d.get("value"))
             kind = standardize_kind(d.get("kind"))
-            ts = parse_iso_timestamp_string(d.get("time"))
+            ts = parse_timestamp_string(d.get("time"))
             rows.append(
                 {
                     "artifact_id": entity,
@@ -233,6 +233,8 @@ def main():
 
     # Standardize units to SI further (psi to Pa, kPa to Pa)
     df = standardize_to_si(df)
+
+    print(df)
 
     # Output
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
