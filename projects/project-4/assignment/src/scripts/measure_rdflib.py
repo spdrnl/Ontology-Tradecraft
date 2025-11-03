@@ -310,7 +310,7 @@ def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
         material_artifact_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [row.artifact_id])
         g.add((ns[material_artifact_q_name], URIRef("http://purl.obolibrary.org/obo/BFO_0000196"),
                ns[sdc_instance_q_name]))
-    logger.info("Created {n} quality instances and added these to the material artifacts.")
+    logger.info("Created {n} sdc instances and added these to the material artifacts.")
 
 
 def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
@@ -376,9 +376,9 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 
         # Is measurement of quality
         # is a measurement of https://www.commoncoreontologies.org/ont00001966
-        quality_instance_q_name = unique_qname("quality", [row.artifact_id, row.sdc_kind])
+        sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
         g.add((ns[mice_instance_name], URIRef("https://www.commoncoreontologies.org/ont00001966"),
-               URIRef(ns[quality_instance_q_name])))
+               URIRef(ns[sdc_instance_q_name])))
 
     logger.info("Created {n} MICE sensor observation instances.")
 
