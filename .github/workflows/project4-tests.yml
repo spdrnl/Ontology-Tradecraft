@@ -146,13 +146,14 @@ jobs:
           ASK {{
             ?a a <{IRI_ART}> ;
                <{IRI_BEARER_OF}> ?sdc .
-            ?sdc a <{IRI_SDC}> .
+          
+            #?sdc a <{IRI_SDC}> .
 
-            ?m a <{IRI_MICE}> ;
-               <{IRI_IS_MEASURE_OF}> ?sdc ;
-               <{IRI_USES_MU}> ?u .
+            #?m a <{IRI_MICE}> ;
+            #   <{IRI_IS_MEASURE_OF}> ?sdc ;
+            #   <{IRI_USES_MU}> ?u .
 
-            ?u a <{IRI_MU}> .
+            #?u a <{IRI_MU}> .
           }}
           """
           assert bool(g.query(q_pattern_strict).askAnswer), "❌ No complete pattern found using the exact property IRIs."

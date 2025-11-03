@@ -294,8 +294,8 @@ def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
 
 def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
     n = 0
-    qualities = df[['sdc_kind', 'artifact_id']].drop_duplicates()
-    for _, row in qualities.iterrows():
+    sdc_instances = df[['sdc_kind', 'artifact_id']].drop_duplicates()
+    for _, row in sdc_instances.iterrows():
         n+=1
 
         # Create sdc instance
