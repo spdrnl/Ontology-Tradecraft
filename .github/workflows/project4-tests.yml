@@ -149,9 +149,9 @@ jobs:
           
             ?sdc a <{IRI_SDC}> .
 
-            #?m a <{IRI_MICE}> ;
-            #   <{IRI_IS_MEASURE_OF}> ?sdc ;
-            #   <{IRI_USES_MU}> ?u .
+            ?m a <{IRI_MICE}> ;
+               <{IRI_IS_MEASURE_OF}> ?sdc ;
+               <{IRI_USES_MU}> ?u .
 
             #?u a <{IRI_MU}> .
           }}
