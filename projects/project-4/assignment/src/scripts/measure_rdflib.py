@@ -13,7 +13,9 @@ from pandas import DataFrame
 from rdflib import Namespace, URIRef, Literal, Graph
 from rdflib import OWL, RDF, RDFS, SKOS, XSD
 
-OBSERVED_ENTITY_CLASS_NAME = "ObservedEntity"
+from merge_ontologies import load_graph
+
+MATERIAL_ARTIFACT_CLASS_NAME = "MaterialArtifact"
 
 logger = logging.getLogger(__name__)
 
@@ -245,12 +247,27 @@ def main():
     translate_to_rdf(df, g, ns)
 
     # Write graph to file
-    write_ttl_kg(g, output_file, Namespace(ns))
+    unmerged_file = SRC_ROOT / "measure_cco_unmerged.ttl"
+    print(f"Writing plain KG to {unmerged_file}.")
+    write_ttl_kg(g, unmerged_file, Namespace(ns))
+
+    # Merge with CCO
+    print(f"Merging plain KG with CCO to {output_file}.")
+    ttl_paths = [unmerged_file, SRC_ROOT / "cco_merged.ttl"]
+    graph = load_graph(ttl_paths)
+
+    # set the default namespace
+    default_ns = Namespace("http://www.newfoundland.nl/otc/project-4")
+    graph.bind("", default_ns)
+
+    # output the graph
+    graph.serialize(str(output_file), format="turtle")
+    print(f"Merged graph saved to {output_file}")
 
 
 def translate_to_rdf(df: DataFrame, g: Graph, ns: Namespace):
-    create_sensors(df, g, ns)
-    create_observed_entities(df, g, ns)
+    # create_sensors(df, g, ns)
+    create_material_artifacts(df, g, ns)
     create_qualities(df, g, ns)
     create_sensor_observations(df, g, ns)
 
@@ -332,25 +349,17 @@ def create_sensors(df: DataFrame, g: Graph, ns: Namespace):
         g.add((ns[instance_q_name], RDFS.label, Literal(label, lang='en')))
 
 
-def create_observed_entities(df: DataFrame, g: Graph, ns: Namespace):
-    # Material Artifact https://www.commoncoreontologies.org/ont00000995
-    observed_entity_class_name = OBSERVED_ENTITY_CLASS_NAME
-    # g.add((ns[observed_entity_class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00000995")))
-    # g.add((ns[observed_entity_class_name], RDFS.label, label_from_class(observed_entity_class_name)))
-    # g.add((ns[observed_entity_class_name], SKOS.definition,
-    #        Literal("An observed entity is an entity that is measured by a sensor.", lang='en')))
-    # logger.info("Created ObservedEntity class.")
-
+def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
     n = 0
     artifact_ids = df['artifact_id'].unique()
     for artifact_id in artifact_ids:
         n += 1
-        observed_entity_q_name = unique_qname(observed_entity_class_name, [artifact_id])
-        label = f"Observed entity {artifact_id}"
+        observed_entity_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [artifact_id])
+        label = f"Material artifact {artifact_id}"
+        # Material Artifact https://www.commoncoreontologies.org/ont00000995
         g.add((ns[observed_entity_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000995")))
         g.add((ns[observed_entity_q_name], RDFS.label, Literal(label, lang='en')))
-
-    logger.info("Created {n} Observed Entity instances.")
+    logger.info("Created {n} material artifact instances.")
 
 
 def create_qualities(df: DataFrame, g: Graph, ns: Namespace):
@@ -360,27 +369,13 @@ def create_qualities(df: DataFrame, g: Graph, ns: Namespace):
     # Pressure https://www.commoncoreontologies.org/ont00000380
     pressure_uri = URIRef("https://www.commoncoreontologies.org/ont00000380")
 
-    # Quality http://purl.obolibrary.org/obo/BFO_0000019
     # Voltage
-    voltage_class_name = "Voltage"
-    g.add((ns[voltage_class_name], RDFS.subClassOf, URIRef("http://purl.obolibrary.org/obo/BFO_0000019")))
-    g.add((ns[voltage_class_name], RDFS.label, label_from_class(voltage_class_name)))
-    g.add((ns[voltage_class_name], SKOS.definition,
-           Literal("A voltage is a measure of an electrical potential difference.", lang='en')))
-    voltage_uri = ns[voltage_class_name]
-    logger.info("Created Voltage class.")
+    voltage_uri = create_voltage_class(g, ns)
 
     # Electrical resistance
-    resistance_class_name = "ElectricalResistance"
-    g.add((ns[resistance_class_name], RDFS.subClassOf, URIRef("http://purl.obolibrary.org/obo/BFO_0000019")))
-    g.add((ns[resistance_class_name], RDFS.label, label_from_class(resistance_class_name)))
-    g.add((ns[resistance_class_name], SKOS.definition,
-           Literal("A electrical resistance is a measure of its opposition to the flow of electric current.",
-                   lang='en')))
-    resitance_uri = ns[resistance_class_name]
-    logger.info("Created electrical resistance class.")
+    resitance_uri = create_electrical_resistance_class(g, ns)
 
-    # Create instances
+    # Create quality instances
     n = 0
     qualities = df[['artifact_id', 'sdc_kind']].drop_duplicates()
     for _, row in qualities.iterrows():
@@ -396,71 +391,71 @@ def create_qualities(df: DataFrame, g: Graph, ns: Namespace):
             print(f"Unknown quality kind: {row.sdc_kind}")
             exit(1)
 
-        # Add qualities
-        # quality http://purl.obolibrary.org/obo/BFO_0000019
-        quality_instance_q_name = unique_qname("quality", [row.artifact_id, row.sdc_kind])
-        label = f"Quality instance for {row.artifact_id} of kind {row.sdc_kind}"
-        g.add((ns[quality_instance_q_name], RDF.type, URIRef("http://purl.obolibrary.org/obo/BFO_0000020")))
+        quality_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
+        label = f"Quality instance of kind {row.sdc_kind} for {row.artifact_id}."
+        # SDC http://purl.obolibrary.org/obo/BFO_0000020
+        # g.add((ns[quality_instance_q_name], RDF.type, URIRef("http://purl.obolibrary.org/obo/BFO_0000020")))
+        g.add((ns[quality_instance_q_name], RDF.type, URIRef(instance_type)))
         g.add((ns[quality_instance_q_name], RDFS.label, Literal(label, lang='en')))
 
-        # Add bearer of
+        # Add these instances to the material artifacts via bearer of
         # bearer of http://purl.obolibrary.org/obo/BFO_0000196
-        observed_entity_q_name = unique_qname(OBSERVED_ENTITY_CLASS_NAME, [row.artifact_id])
+        observed_entity_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [row.artifact_id])
         g.add((ns[observed_entity_q_name], URIRef("http://purl.obolibrary.org/obo/BFO_0000196"),
                ns[quality_instance_q_name]))
-    logger.info("Created {n} quality instances.")
+    logger.info("Created {n} quality instances and added these to the material artifacts.")
+
+
+def create_electrical_resistance_class(g: Graph, ns: Namespace) -> URIRef:
+    resistance_class_name = "ElectricalResistance"
+    # Quality http://purl.obolibrary.org/obo/BFO_0000019
+    g.add((ns[resistance_class_name], RDFS.subClassOf, URIRef("http://purl.obolibrary.org/obo/BFO_0000019")))
+    g.add((ns[resistance_class_name], RDFS.label, label_from_class(resistance_class_name)))
+    g.add((ns[resistance_class_name], SKOS.definition,
+           Literal("A electrical resistance is a measure of its opposition to the flow of electric current.",
+                   lang='en')))
+    resitance_uri = ns[resistance_class_name]
+    logger.info("Created electrical resistance class.")
+    return resitance_uri
+
+
+def create_voltage_class(g: Graph, ns: Namespace) -> URIRef:
+    voltage_class_name = "Voltage"
+    # Quality http://purl.obolibrary.org/obo/BFO_0000019
+    g.add((ns[voltage_class_name], RDFS.subClassOf, URIRef("http://purl.obolibrary.org/obo/BFO_0000019")))
+    g.add((ns[voltage_class_name], RDFS.label, label_from_class(voltage_class_name)))
+    g.add((ns[voltage_class_name], SKOS.definition,
+           Literal("A voltage is a measure of an electrical potential difference.", lang='en')))
+    voltage_uri = ns[voltage_class_name]
+    logger.info("Created Voltage class.")
+    return voltage_uri
 
 
 def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
+    # Create Pascal measurement unit instance
     # Pa instance https://www.commoncoreontologies.org/ont00001559"
     # pa_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001559")
+    pa_instance_uri = create_pascal_measurement_unit_instance(g, ns)
 
-    # Create ohm measurement unit instance
-    pa_instance_q_name = "Pa"
-    g.add((ns[pa_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[pa_instance_q_name], RDFS.label, Literal("Pa measurement unit instance", lang='en')))
-    logger.info("Created Pa measurement unit instance.")
-    pa_instance_uri = ns[pa_instance_q_name]
-
+    # Create Celsius measurement unit instance
     # Celsius instance https://www.commoncoreontologies.org/ont00001606
     # celsius_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001606")
-    celsius_instance_q_name = "C"
-    g.add((ns[celsius_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
-    logger.info("Created Celsius measurement unit instance.")
-    celsius_instance_uri = ns[celsius_instance_q_name]
+    celsius_instance_uri = create_celsius_measurement_unit_instance(g, ns)
 
+    # Create Volt measurement unit instance
     # Volt instance https://www.commoncoreontologies.org/ont00001450
-    #volt_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001450")
-    volt_instance_q_name = "C"
-    g.add((ns[volt_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
-    logger.info("Created volt measurement unit instance.")
-    volt_instance_uri = ns[volt_instance_q_name]
+    # volt_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001450")
+    volt_instance_uri = create_volt_measurement_unit_instance(g, ns)
+
+    # Create ohm measurement unit instance
+    ohm_instance_uri = create_ohm_measurement_unit_instance(g, ns)
 
     # Create ohm measurement unit class
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    ohm_class_name = "OhmMeasurementUnit"
-    g.add((ns[ohm_class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[ohm_class_name], RDFS.label, label_from_class(ohm_class_name)))
-    g.add((ns[ohm_class_name], SKOS.definition,
-           Literal("An ohm is a measurement unit of electromagnetic resistance.", lang='en')))
-    logger.info("Created ohm measurement unit class.")
-
-    # Create ohm measurement unit instance
-    ohm_instance_q_name = "ohm"
-    g.add((ns[ohm_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
-    g.add((ns[ohm_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
-    logger.info("Created ohm measurement unit instance.")
-    ohm_instance_uri = ns[ohm_instance_q_name]
+    #create_ohm_measurement_unit_class(g, ns)
 
     # Create sensor readings class
-    class_name = "SensorObservation"
-    g.add((ns[class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00001163")))
-    g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
-    g.add((ns[class_name], SKOS.definition,
-           Literal("A sensor observation is a measurement observation generated by a sensor.", lang='en')))
-    logger.info("Created SensorObservation class.")
+    #create_sensor_reading_class(g, ns)
 
     # Create sensor readings instances
     n = 0
@@ -468,17 +463,16 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
         n += 1
 
         # Create observation instance
-        # MICE https://www.commoncoreontologies.org/ont00001163
-        instance_name = unique_qname("sensor-observation",
+        mice_instance_name = unique_qname("mice-sensor-observation",
                                      [row.artifact_id, row.unit_label, row.timestamp, str(row.value), row.sdc_kind])
         label = f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} at {row.timestamp} of {row.value}"
-        g.add((ns[instance_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001163")))
-        g.add((ns[instance_name], RDFS.label, Literal(label, lang='en')))
+        # MICE https://www.commoncoreontologies.org/ont00001163
+        g.add((ns[mice_instance_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00001163")))
+        g.add((ns[mice_instance_name], RDFS.label, Literal(label, lang='en')))
 
-        # Add value
-        # has double value https://www.commoncoreontologies.org/ont00001770
+        # Add measurement value
         # has decimal value https://www.commoncoreontologies.org/ont00001769
-        g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001769"),
+        g.add((ns[mice_instance_name], URIRef("https://www.commoncoreontologies.org/ont00001769"),
                Literal(row.value, datatype=XSD.decimal, normalize=False)))
 
         # Add uses measurement unit
@@ -495,16 +489,75 @@ def create_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
             exit(1)
 
         # uses measurement unit https://www.commoncoreontologies.org/ont00001863
-        g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001863"),
+        g.add((ns[mice_instance_name], URIRef("https://www.commoncoreontologies.org/ont00001863"),
                type_uri))
 
         # Is measurement of quality
         # is a measurement of https://www.commoncoreontologies.org/ont00001966
         quality_instance_q_name = unique_qname("quality", [row.artifact_id, row.sdc_kind])
-        g.add((ns[instance_name], URIRef("https://www.commoncoreontologies.org/ont00001966"),
+        g.add((ns[mice_instance_name], URIRef("https://www.commoncoreontologies.org/ont00001966"),
                URIRef(ns[quality_instance_q_name])))
 
-    logger.info("Created {n} SensorObservation instances.")
+    logger.info("Created {n} MICE sensor observation instances.")
+
+
+def create_ohm_measurement_unit_class(g: Graph, ns: Namespace):
+    ohm_class_name = "OhmMeasurementUnit"
+    g.add((ns[ohm_class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00000120")))
+    g.add((ns[ohm_class_name], RDFS.label, label_from_class(ohm_class_name)))
+    g.add((ns[ohm_class_name], SKOS.definition,
+           Literal("An ohm is a measurement unit of electromagnetic resistance.", lang='en')))
+    logger.info("Created ohm measurement unit class.")
+
+
+def create_sensor_reading_class(g: Graph, ns: Namespace):
+    class_name = "SensorObservation"
+    # MICE https://www.commoncoreontologies.org/ont00001163
+    g.add((ns[class_name], RDFS.subClassOf, URIRef("https://www.commoncoreontologies.org/ont00001163")))
+    g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
+    g.add((ns[class_name], SKOS.definition,
+           Literal("A sensor observation is a measurement observation generated by a sensor.", lang='en')))
+    logger.info("Created SensorObservation class.")
+
+
+def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
+    ohm_instance_q_name = "ohm"
+    # Measurement unit https://www.commoncoreontologies.org/ont00000120
+    g.add((ns[ohm_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
+    g.add((ns[ohm_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
+    logger.info("Created ohm measurement unit instance.")
+    ohm_instance_uri = ns[ohm_instance_q_name]
+    return ohm_instance_uri
+
+
+def create_volt_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
+    volt_instance_q_name = "C"
+    # Measurement unit https://www.commoncoreontologies.org/ont00000120
+    g.add((ns[volt_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
+    g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
+    logger.info("Created volt measurement unit instance.")
+    volt_instance_uri = ns[volt_instance_q_name]
+    return volt_instance_uri
+
+
+def create_celsius_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
+    celsius_instance_q_name = "C"
+    # Measurement unit https://www.commoncoreontologies.org/ont00000120
+    g.add((ns[celsius_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
+    g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
+    logger.info("Created Celsius measurement unit instance.")
+    celsius_instance_uri = ns[celsius_instance_q_name]
+    return celsius_instance_uri
+
+
+def create_pascal_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
+    pa_instance_q_name = "Pa"
+    # Measurement unit https://www.commoncoreontologies.org/ont00000120
+    g.add((ns[pa_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
+    g.add((ns[pa_instance_q_name], RDFS.label, Literal("Pa measurement unit instance", lang='en')))
+    logger.info("Created Pa measurement unit instance.")
+    pa_instance_uri = ns[pa_instance_q_name]
+    return pa_instance_uri
 
 
 if __name__ == "__main__":

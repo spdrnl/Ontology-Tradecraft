@@ -10,6 +10,17 @@
 #################################################################
 # 1) Artifact bears at least one SDC (cardinality);
 #################################################################
+#ex:ArtifactHasSDCShape
+#  a sh:NodeShape ;
+#  sh:targetClass cco:Artifact ;
+#  sh:property [
+#    sh:path bfo:bearer_of ;
+#    sh:minCount 1 ;
+#    sh:class bfo:SpecificallyDependentContinuant ;
+#    sh:message "Every Artifact must bear at least one SDC (Specifically Dependent Continuant)." ;
+#    sh:severity sh:Violation
+#  ] .
+
 ex:ArtifactHasSDCShape
   a sh:NodeShape ;
   sh:targetClass cco:ObservedEntity  ;
@@ -92,7 +103,7 @@ ex:UnitMustMatchSDCMeasuredOhm a sh:NodeShape ;
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
         sh:class :ElectricalResistance ;
         sh:minCount 1;
-        sh:message "Ohm unit must match resistance quality."
+        sh:message "Ohm unit must match electrical resistance quality."
     ] .
 
 ex:UnitMustMatchSDCMeasuredVolt a sh:NodeShape ;
