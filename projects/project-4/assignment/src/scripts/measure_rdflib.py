@@ -438,7 +438,7 @@ def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
 
 
 def create_volt_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
-    volt_instance_q_name = "C"
+    volt_instance_q_name = "Volt"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
     g.add((ns[volt_instance_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000120")))
     g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
