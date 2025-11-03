@@ -147,7 +147,7 @@ jobs:
             ?a a <{IRI_ART}> ;
                <{IRI_BEARER_OF}> ?sdc .
           
-            #?sdc a <{IRI_SDC}> .
+            ?sdc a <{IRI_SDC}> .
 
             #?m a <{IRI_MICE}> ;
             #   <{IRI_IS_MEASURE_OF}> ?sdc ;
