@@ -153,7 +153,7 @@ jobs:
                <{IRI_IS_MEASURE_OF}> ?sdc ;
                <{IRI_USES_MU}> ?u .
 
-            #?u a <{IRI_MU}> .
+            ?u a <{IRI_MU}> .
           }}
           """
           assert bool(g.query(q_pattern_strict).askAnswer), "❌ No complete pattern found using the exact property IRIs."
