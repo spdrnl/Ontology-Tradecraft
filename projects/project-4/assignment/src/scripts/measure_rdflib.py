@@ -13,18 +13,11 @@ from pandas import DataFrame
 from rdflib import Namespace, URIRef, Literal, Graph
 
 from rdflib import OWL, RDF, RDFS, SKOS, XSD
+
 from merge_ontologies import load_graph
 
 from bfo import BFO
-
-IRI_QUALITY = BFO.quality
-IRI_IS_A_MEASUREMENT_OF = URIRef("https://www.commoncoreontologies.org/ont00001966")
-IRI_USES_MEASUREMENT_UNIT = URIRef("https://www.commoncoreontologies.org/ont00001863")
-IRI_MICE = URIRef("https://www.commoncoreontologies.org/ont00001163")
-IRI_HAS_DECIMAL_VALUE = URIRef("https://www.commoncoreontologies.org/ont00001769")
-IRI_MEASUREMENT_UNIT = URIRef("https://www.commoncoreontologies.org/ont00000120")
-
-MATERIAL_ARTIFACT_CLASS_NAME = "MaterialArtifact"
+from cco import CCO
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +30,8 @@ OUTPUT_PATH = SRC_ROOT / "measure_cco.ttl"
 # Namespace settings
 DEFAULT_NS = Namespace("http://www.newfoundland.nl/otc/project-4/")
 NS_CCO = Namespace("https://www.commoncoreontologies.org/")
+MATERIAL_ARTIFACT_CLASS_NAME = "MaterialArtifact"
+
 
 
 def write_ttl_kg(
@@ -358,12 +353,12 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
                                      [row.artifact_id, row.unit_label, row.timestamp, str(row.value), row.sdc_kind])
         label = f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} at {row.timestamp} of {row.value}"
         # MICE https://www.commoncoreontologies.org/ont00001163
-        g.add((ns[mice_instance_name], RDF.type, IRI_MICE))
+        g.add((ns[mice_instance_name], RDF.type, CCO.measurementInformationContentEntity))
         g.add((ns[mice_instance_name], RDFS.label, Literal(label, lang='en')))
 
         # Add measurement value
         # has decimal value https://www.commoncoreontologies.org/ont00001769
-        g.add((ns[mice_instance_name], IRI_HAS_DECIMAL_VALUE,
+        g.add((ns[mice_instance_name], CCO.hasDecimalValue,
                Literal(row.value, datatype=XSD.decimal, normalize=False)))
 
         # Add uses measurement unit
@@ -380,13 +375,13 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
             exit(1)
 
         # uses measurement unit https://www.commoncoreontologies.org/ont00001863
-        g.add((ns[mice_instance_name], IRI_USES_MEASUREMENT_UNIT,
+        g.add((ns[mice_instance_name], CCO.usesMeasurementUnit,
                type_uri))
 
         # Is measurement of quality
         # is a measurement of https://www.commoncoreontologies.org/ont00001966
         sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
-        g.add((ns[mice_instance_name], IRI_IS_A_MEASUREMENT_OF,
+        g.add((ns[mice_instance_name], CCO.isAMeasurementOf,
                URIRef(ns[sdc_instance_q_name])))
 
     logger.info("Created {n} MICE sensor observation instances.")
@@ -395,7 +390,7 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 def create_electrical_resistance_class(g: Graph, ns: Namespace) -> URIRef:
     resistance_class_name = "ElectricalResistance"
     # Quality http://purl.obolibrary.org/obo/BFO_0000019
-    g.add((ns[resistance_class_name], RDFS.subClassOf, IRI_QUALITY))
+    g.add((ns[resistance_class_name], RDFS.subClassOf, BFO.quality))
     g.add((ns[resistance_class_name], RDFS.label, label_from_class(resistance_class_name)))
     g.add((ns[resistance_class_name], SKOS.definition,
            Literal("A electrical resistance is a measure of its opposition to the flow of electric current.",
@@ -408,7 +403,7 @@ def create_electrical_resistance_class(g: Graph, ns: Namespace) -> URIRef:
 def create_voltage_class(g: Graph, ns: Namespace) -> URIRef:
     voltage_class_name = "Voltage"
     # Quality http://purl.obolibrary.org/obo/BFO_0000019
-    g.add((ns[voltage_class_name], RDFS.subClassOf, IRI_QUALITY))
+    g.add((ns[voltage_class_name], RDFS.subClassOf, BFO.quality))
     g.add((ns[voltage_class_name], RDFS.label, label_from_class(voltage_class_name)))
     g.add((ns[voltage_class_name], SKOS.definition,
            Literal("A voltage is a measure of an electrical potential difference.", lang='en')))
@@ -420,7 +415,7 @@ def create_voltage_class(g: Graph, ns: Namespace) -> URIRef:
 def create_ohm_measurement_unit_class(g: Graph, ns: Namespace):
     ohm_class_name = "OhmMeasurementUnit"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[ohm_class_name], RDFS.subClassOf, IRI_MEASUREMENT_UNIT))
+    g.add((ns[ohm_class_name], RDFS.subClassOf, CCO.measurementUnit))
     g.add((ns[ohm_class_name], RDFS.label, label_from_class(ohm_class_name)))
     g.add((ns[ohm_class_name], SKOS.definition,
            Literal("An ohm is a measurement unit of electromagnetic resistance.", lang='en')))
@@ -430,7 +425,7 @@ def create_ohm_measurement_unit_class(g: Graph, ns: Namespace):
 def create_sensor_reading_class(g: Graph, ns: Namespace):
     class_name = "SensorObservation"
     # MICE https://www.commoncoreontologies.org/ont00001163
-    g.add((ns[class_name], RDFS.subClassOf, IRI_MICE))
+    g.add((ns[class_name], RDFS.subClassOf, CCO.measurementInformationContentEntity))
     g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
     g.add((ns[class_name], SKOS.definition,
            Literal("A sensor observation is a measurement observation generated by a sensor.", lang='en')))
@@ -440,7 +435,7 @@ def create_sensor_reading_class(g: Graph, ns: Namespace):
 def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
     ohm_instance_q_name = "ohm"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[ohm_instance_q_name], RDF.type, IRI_MEASUREMENT_UNIT))
+    g.add((ns[ohm_instance_q_name], RDF.type, CCO.measurementUnit))
     g.add((ns[ohm_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
     logger.info("Created ohm measurement unit instance.")
     ohm_instance_uri = ns[ohm_instance_q_name]
@@ -450,7 +445,7 @@ def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
 def create_volt_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
     volt_instance_q_name = "Volt"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[volt_instance_q_name], RDF.type, IRI_MEASUREMENT_UNIT))
+    g.add((ns[volt_instance_q_name], RDF.type, CCO.measurementUnit))
     g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
     logger.info("Created volt measurement unit instance.")
     volt_instance_uri = ns[volt_instance_q_name]
@@ -460,7 +455,7 @@ def create_volt_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
 def create_celsius_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
     celsius_instance_q_name = "C"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[celsius_instance_q_name], RDF.type, IRI_MEASUREMENT_UNIT))
+    g.add((ns[celsius_instance_q_name], RDF.type, CCO.measurementUnit))
     g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
     logger.info("Created Celsius measurement unit instance.")
     celsius_instance_uri = ns[celsius_instance_q_name]
@@ -470,7 +465,7 @@ def create_celsius_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
 def create_pascal_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
     pa_instance_q_name = "Pa"
     # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[pa_instance_q_name], RDF.type, IRI_MEASUREMENT_UNIT))
+    g.add((ns[pa_instance_q_name], RDF.type, CCO.measurementUnit))
     g.add((ns[pa_instance_q_name], RDFS.label, Literal("Pa measurement unit instance", lang='en')))
     logger.info("Created Pa measurement unit instance.")
     pa_instance_uri = ns[pa_instance_q_name]
@@ -479,14 +474,3 @@ def create_pascal_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
 
 if __name__ == "__main__":
     main()
-
-# Temperature https://www.commoncoreontologies.org/ont00000441
-# Nominal MICE https://www.commoncoreontologies.org/ont00000293
-# Ratio measurement https://www.commoncoreontologies.org/ont00001022
-# is a ratio measurement of https://www.commoncoreontologies.org/ont00001983
-# is a ordinal meseasurement of https://www.commoncoreontologies.org/ont00001811
-# Measurment unit https://www.commoncoreontologies.org/ont00000120
-
-
-# Sensor https://www.commoncoreontologies.org/ont00000569
-# Material Artifact https://www.commoncoreontologies.org/ont00000995
