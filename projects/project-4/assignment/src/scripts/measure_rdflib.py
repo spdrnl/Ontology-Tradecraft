@@ -33,6 +33,207 @@ NS_CCO = Namespace("https://www.commoncoreontologies.org/")
 MATERIAL_ARTIFACT_CLASS_NAME = "MaterialArtifact"
 
 
+def get_args() -> argparse.Namespace:
+    """
+    Fetches command-line arguments required for processing SPARQL query files against Turtle files
+    and outputs the results into a CSV file. Parses the provided arguments and validates their
+    presence and expected types.
+
+    :return: Namespace object containing parsed command-line arguments.
+    :rtype: argparse.Namespace
+    """
+    # Initialize
+    parser = argparse.ArgumentParser(
+        description="The program import a normalized readings CSV input file and outputs an ontology in Turtle (TTL) file.",
+        epilog="Happy ontology hacking!",
+        prog="create-rdf",
+    )
+
+    # Adding optional parameters
+    parser.add_argument(
+        "-i", "--input-file", help="CSV input file.", default=INPUT_PATH, type=str
+    )
+
+    parser.add_argument(
+        "-o", "--output-file", help="Turtle output file.", default=OUTPUT_PATH, type=str
+    )
+
+    parser.add_argument(
+        "-ns", "--namespace", help="Namespace.", default=DEFAULT_NS, type=str
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    # Resolve arguments
+    args = get_args()
+    input_file = args.input_file
+    output_file = args.output_file
+    namespace = args.namespace
+    ns = Namespace(namespace)
+
+    # Read CSV
+    df = pd.read_csv(input_file, header=0)
+
+    # Create ontology
+    g = Graph()
+    create_ontology(g, namespace)
+
+    # Translate data to RDF
+    translate_to_rdf(df, g, ns)
+
+    # Write graph to file
+    unmerged_file = SRC_ROOT / "measure_cco_unmerged.ttl"
+    print(f"Writing plain KG to {unmerged_file}.")
+    write_ttl_kg(g, unmerged_file, Namespace(ns))
+
+    # Merge with CCO
+    print(f"Merging plain KG with CCO to {output_file}.")
+    ttl_paths = [unmerged_file, SRC_ROOT / "cco_merged.ttl"]
+    graph = load_graph(ttl_paths)
+
+    # set the default namespace
+    default_ns = Namespace("http://www.newfoundland.nl/otc/project-4")
+    graph.bind("", default_ns)
+
+    # output the graph
+    graph.serialize(str(output_file), format="turtle")
+    print(f"Merged graph saved to {output_file}")
+
+
+def translate_to_rdf(df: DataFrame, g: Graph, ns: Namespace):
+    create_material_artifacts(df, g, ns)
+    create_sdc_instances(df, g, ns)
+    create_mice_sensor_observations(df, g, ns)
+
+
+def create_ontology(g: Graph, namespace):
+    ontology_uri = URIRef(namespace)
+    g.add((ontology_uri, RDF.type, OWL.Ontology))
+    g.add((ontology_uri, RDFS.label, Literal("Sensor Data Ontology", lang='en')))
+    g.add((ontology_uri, RDFS.comment, Literal("An ontology for sensor readings and measurements", lang='en')))
+    logger.info("Created ontology.")
+
+
+def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
+    n = 0
+    artifact_ids = df['artifact_id'].unique()
+    for artifact_id in artifact_ids:
+        n += 1
+        material_artifact_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [artifact_id])
+        label = f"Material artifact {artifact_id}"
+        g.add((ns[material_artifact_q_name], RDF.type, CCO.materialArtifact))
+        g.add((ns[material_artifact_q_name], RDFS.label, Literal(label, lang='en')))
+    logger.info("Created {n} material artifact instances.")
+
+
+def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
+    # Create SDC class mappings
+    sdc_class_mappings = {
+        "temperature": create_subclass(ns,
+                                       "Temperature",
+                                       "A temperature is a measure of the amount of thermal energy of a material.",
+                                       BFO.specificallyDependentContinuant, g),
+        "pressure": create_subclass(ns,
+                                    "Pressure",
+                                    "A pressure is an amount of force excerted on a surface.",
+                                    BFO.specificallyDependentContinuant, g),
+        "voltage": create_subclass(ns,
+                                   "Voltage",
+                                   "A voltage is a difference in potential between two points in a circuit.",
+                                   BFO.specificallyDependentContinuant, g),
+        "resistance": create_subclass(ns,
+                                      "Resistance",
+                                      "A resistance is a measure of opposition to the flow of electric current.",
+                                      BFO.specificallyDependentContinuant, g)
+    }
+
+    # Create SDC instances
+    sdc_instances = df[['sdc_kind', 'artifact_id']].drop_duplicates()
+    for _, row in sdc_instances.iterrows():
+        sdc_subclass_uri = sdc_class_mappings.get(row.sdc_kind, None)
+        if sdc_subclass_uri is None:
+            print(f"Unknown SDC subclass for unit: {row.sdc_kind}")
+            exit(1)
+
+        # Create sdc instance
+        sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
+        label = f"Specifically dependent continuant instance of kind {row.sdc_kind} for {row.artifact_id}."
+        g.add((ns[sdc_instance_q_name], RDF.type, BFO.specificallyDependentContinuant))
+        g.add((ns[sdc_instance_q_name], RDF.type, sdc_subclass_uri))
+        g.add((ns[sdc_instance_q_name], RDFS.label, Literal(label, lang='en')))
+
+        # Add these instances to the material artifacts via bearer of
+        material_artifact_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [row.artifact_id])
+        g.add((ns[material_artifact_q_name], BFO.bearerOf, ns[sdc_instance_q_name]))
+
+    logger.info(f"Created {len(sdc_instances)} sdc instances and added these to the material artifacts.")
+
+
+def create_subclass(ns: Namespace, class_q_name: str, definition: str, subsuming_class: URIRef, g: Graph) -> URIRef:
+    uri_ref = ns[class_q_name]
+    g.add((uri_ref, RDFS.subClassOf, subsuming_class))
+    g.add((uri_ref, RDFS.label, Literal(label_from_class(class_q_name), lang='en')))
+    g.add((uri_ref, SKOS.definition, Literal(definition, lang='en')))
+    return uri_ref
+
+
+def create_observation_instance(g: Graph, ns: Namespace, row, unit_uri: URIRef):
+    """Create a single sensor observation instance in the graph."""
+    mice_instance_name = unique_qname("mice-sensor-observation",
+                                      [row.artifact_id, row.unit_label, row.timestamp,
+                                       str(row.value), row.sdc_kind])
+
+    mice_instance_label = (f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} "
+                           f"at {row.timestamp} of {row.value}")
+
+    mice_instance_uri = ns[mice_instance_name]
+
+    # Add observation type and label
+    g.add((mice_instance_uri, RDF.type, CCO.measurementInformationContentEntity))
+    g.add((mice_instance_uri, RDFS.label, Literal(mice_instance_label, lang='en')))
+
+    # Add measurement value
+    g.add((mice_instance_uri, CCO.hasDecimalValue, Literal(row.value, datatype=XSD.decimal, normalize=False)))
+
+    # Add measurement unit
+    g.add((mice_instance_uri, CCO.usesMeasurementUnit, unit_uri))
+
+    # Link to SDC instance
+    sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
+    g.add((mice_instance_uri, CCO.isAMeasurementOf, URIRef(ns[sdc_instance_q_name])))
+
+
+def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
+    # Create measurement unit instances and build mapping
+    unit_mapping = {
+        "Pa": create_instance("Pa", "Pascal measurement unit instance", CCO.measurementUnit, g, ns),
+        "C": create_instance("C", "Celsius measurement unit instance", CCO.measurementUnit, g, ns),
+        "volt": create_instance("Volt", "Volt measurement unit instance", CCO.measurementUnit, g, ns),
+        "ohm": create_instance("ohm", "Ohm measurement unit instance", CCO.measurementUnit, g, ns)
+    }
+
+    # Create sensor observation instances
+    observation_count = 0
+    for index, row in df.iterrows():
+        observation_count += 1
+        unit_uri = unit_mapping.get(row.unit_label, None)
+        if unit_uri is None:
+            print(f"Unknown unit label: {row.unit_label}")
+            exit(1)
+        create_observation_instance(g, ns, row, unit_uri)
+
+    logger.info(f"Created {observation_count} MICE sensor observation instances.")
+
+
+def create_instance(instance_q_name: str, instance_label: str, instance_type: URIRef, g: Graph,
+                    ns: Namespace) -> URIRef:
+    instance_uri = ns[instance_q_name]
+    g.add((instance_uri, RDF.type, instance_type))
+    g.add((instance_uri, RDFS.label, Literal(instance_label, lang='en')))
+    return instance_uri
+
 
 def write_ttl_kg(
         graph: Graph, filename: pathlib.Path, default_ns: Namespace = None, base: str = None
@@ -127,25 +328,6 @@ def qname_id_suffix(elements: Iterable[str]) -> str:
     return qname_safe_id
 
 
-def label_from_class_id(class_name: str, id: str) -> str:
-    """
-    Generates a descriptive label by combining a class name with its identifier.
-
-    This function facilitates the creation of a formatted label string that combines
-    a given class name and its identifier. It is intended to enhance readability
-    and identification of objects or entities based on their class and unique ID.
-
-    :param class_name: The name of the class to generate the label for.
-    :type class_name: str
-    :param id: The unique identifier associated with the class.
-    :type id: str
-    :return: The formatted label combining the class name and identifier.
-    :rtype: str
-    """
-    label = f"{label_from_class(class_name)} '{id}'"
-    return label
-
-
 def label_from_class(class_name: str, lang: str = 'en') -> Literal:
     """
     Converts a camel case class name into a readable label and wraps it
@@ -198,284 +380,6 @@ def camel_case_to_words(text) -> str:
     result = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1 \2', result)
 
     return result
-
-
-def get_args() -> argparse.Namespace:
-    """
-    Fetches command-line arguments required for processing SPARQL query files against Turtle files
-    and outputs the results into a CSV file. Parses the provided arguments and validates their
-    presence and expected types.
-
-    :return: Namespace object containing parsed command-line arguments.
-    :rtype: argparse.Namespace
-    """
-    # Initialize
-    parser = argparse.ArgumentParser(
-        description="The program import a normalized readings CSV input file and outputs an ontology in Turtle (TTL) file.",
-        epilog="Happy ontology hacking!",
-        prog="create-rdf",
-    )
-
-    # Adding optional parameters
-    parser.add_argument(
-        "-i", "--input-file", help="CSV input file.", default=INPUT_PATH, type=str
-    )
-
-    parser.add_argument(
-        "-o", "--output-file", help="Turtle output file.", default=OUTPUT_PATH, type=str
-    )
-
-    parser.add_argument(
-        "-ns", "--namespace", help="Namespace.", default=DEFAULT_NS, type=str
-    )
-
-    return parser.parse_args()
-
-
-def main():
-    # Resolve arguments
-    args = get_args()
-    input_file = args.input_file
-    output_file = args.output_file
-    namespace = args.namespace
-    ns = Namespace(namespace)
-
-    # Read CSV
-    df = pd.read_csv(input_file, header=0)
-
-    # Create ontology
-    g = Graph()
-    create_ontology(g, namespace)
-
-    # Translate data to RDF
-    translate_to_rdf(df, g, ns)
-
-    # Write graph to file
-    unmerged_file = SRC_ROOT / "measure_cco_unmerged.ttl"
-    print(f"Writing plain KG to {unmerged_file}.")
-    write_ttl_kg(g, unmerged_file, Namespace(ns))
-
-    # Merge with CCO
-    print(f"Merging plain KG with CCO to {output_file}.")
-    ttl_paths = [unmerged_file, SRC_ROOT / "cco_merged.ttl"]
-    graph = load_graph(ttl_paths)
-
-    # set the default namespace
-    default_ns = Namespace("http://www.newfoundland.nl/otc/project-4")
-    graph.bind("", default_ns)
-
-    # output the graph
-    graph.serialize(str(output_file), format="turtle")
-    print(f"Merged graph saved to {output_file}")
-
-
-def translate_to_rdf(df: DataFrame, g: Graph, ns: Namespace):
-    create_material_artifacts(df, g, ns)
-    create_sdc_instances(df, g, ns)
-    create_mice_sensor_observations(df, g, ns)
-
-
-def create_ontology(g: Graph, namespace):
-    ontology_uri = URIRef(namespace)
-    g.add((ontology_uri, RDF.type, OWL.Ontology))
-    g.add((ontology_uri, RDFS.label, Literal("Sensor Data Ontology", lang='en')))
-    g.add((ontology_uri, RDFS.comment, Literal("An ontology for sensor readings and measurements", lang='en')))
-    logger.info("Created ontology.")
-
-
-def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
-    n = 0
-    artifact_ids = df['artifact_id'].unique()
-    for artifact_id in artifact_ids:
-        n += 1
-        material_artifact_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [artifact_id])
-        label = f"Material artifact {artifact_id}"
-        # Material Artifact https://www.commoncoreontologies.org/ont00000995
-        g.add((ns[material_artifact_q_name], RDF.type, URIRef("https://www.commoncoreontologies.org/ont00000995")))
-        g.add((ns[material_artifact_q_name], RDFS.label, Literal(label, lang='en')))
-    logger.info("Created {n} material artifact instances.")
-
-
-def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
-    # create classes
-
-    # temperature
-    temperature_class_q_name = create_temperature_class(g, ns)
-
-    # pressure
-    pressure_class_q_name = create_pressure_class(g, ns)
-
-    # voltage
-    voltage_class_q_name = create_voltage_class(g, ns)
-
-    # resistance
-    resistance_class_q_name = create_resistance_class(g, ns)
-
-    n = 0
-    sdc_instances = df[['sdc_kind', 'artifact_id']].drop_duplicates()
-    for _, row in sdc_instances.iterrows():
-        n+=1
-
-        # Determine SDC subclass
-        if (row.sdc_kind == "pressure"):
-            sdc_subclass_uri = pressure_class_q_name
-        elif (row.sdc_kind == "temperature"):
-            sdc_subclass_uri = temperature_class_q_name
-        elif (row.sdc_kind == "resistance"):
-            sdc_subclass_uri = resistance_class_q_name
-        elif (row.sdc_kind == "voltage"):
-            sdc_subclass_uri = voltage_class_q_name
-        else:
-            print(f"Unknown SDC subclass for unit: {row.sdc_kind}")
-            exit(1)
-
-        # Create sdc instance
-        sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
-        label = f"Specifically dependent continuant instance of kind {row.sdc_kind} for {row.artifact_id}."
-        # SDC http://purl.obolibrary.org/obo/BFO_0000020
-        g.add((ns[sdc_instance_q_name], RDF.type, BFO.specificallyDependentContinuant))
-        g.add((ns[sdc_instance_q_name], RDF.type, sdc_subclass_uri))
-        g.add((ns[sdc_instance_q_name], RDFS.label, Literal(label, lang='en')))
-
-        # Add these instances to the material artifacts via bearer of
-        # bearer of http://purl.obolibrary.org/obo/BFO_0000196
-        material_artifact_q_name = unique_qname(MATERIAL_ARTIFACT_CLASS_NAME, [row.artifact_id])
-        g.add((ns[material_artifact_q_name], URIRef("http://purl.obolibrary.org/obo/BFO_0000196"),
-               ns[sdc_instance_q_name]))
-    logger.info("Created {n} sdc instances and added these to the material artifacts.")
-
-
-def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
-    pa_instance_uri = create_pascal_measurement_unit_instance(g, ns)
-    celsius_instance_uri = create_celsius_measurement_unit_instance(g, ns)
-    volt_instance_uri = create_volt_measurement_unit_instance(g, ns)
-    ohm_instance_uri = create_ohm_measurement_unit_instance(g, ns)
-
-    # Create sensor readings instances
-    n = 0
-    for index, row in df.iterrows():
-        n += 1
-
-        # Create observation instance
-        mice_instance_name = unique_qname("mice-sensor-observation",
-                                     [row.artifact_id, row.unit_label, row.timestamp, str(row.value), row.sdc_kind])
-        label = f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} at {row.timestamp} of {row.value}"
-        # MICE https://www.commoncoreontologies.org/ont00001163
-        g.add((ns[mice_instance_name], RDF.type, CCO.measurementInformationContentEntity))
-        g.add((ns[mice_instance_name], RDFS.label, Literal(label, lang='en')))
-
-        # Add measurement value
-        # has decimal value https://www.commoncoreontologies.org/ont00001769
-        g.add((ns[mice_instance_name], CCO.hasDecimalValue,
-               Literal(row.value, datatype=XSD.decimal, normalize=False)))
-
-        # Add uses measurement unit
-        if (row.unit_label == "Pa"):
-            type_uri = pa_instance_uri
-        elif (row.unit_label == "C"):
-            type_uri = celsius_instance_uri
-        elif (row.unit_label == "ohm"):
-            type_uri = ohm_instance_uri
-        elif (row.unit_label == "volt"):
-            type_uri = volt_instance_uri
-        else:
-            print(f"Unknown unit label: {row.unit_label}")
-            exit(1)
-
-        # uses measurement unit https://www.commoncoreontologies.org/ont00001863
-        g.add((ns[mice_instance_name], CCO.usesMeasurementUnit,
-               type_uri))
-
-        # Is measurement of quality
-        # is a measurement of https://www.commoncoreontologies.org/ont00001966
-        sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
-        g.add((ns[mice_instance_name], CCO.isAMeasurementOf,
-               URIRef(ns[sdc_instance_q_name])))
-
-    logger.info("Created {n} MICE sensor observation instances.")
-
-def create_temperature_class(g: Graph, ns: Namespace) -> URIRef:
-    class_name = "Temperature"
-    class_q_name = class_name
-    label = class_name
-    definition = "A temperature is a measure of the amount of thermal energy of a material."
-    # SDC http://purl.obolibrary.org/obo/BFO_0000020
-    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
-    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
-    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
-    return ns[class_q_name]
-
-def create_pressure_class(g: Graph, ns: Namespace) -> URIRef:
-    class_name = "Pressure"
-    class_q_name = class_name
-    label = class_name
-    definition = "A pressure is an amount of force excerted on a surface."
-    # SDC http://purl.obolibrary.org/obo/BFO_0000020
-    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
-    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
-    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
-    return ns[class_q_name]
-
-def create_resistance_class(g: Graph, ns: Namespace) -> URIRef:
-    class_name = "ElectricalResistance"
-    class_q_name = class_name
-    label = class_name
-    definition = "A electrical resistance is a measure of opposition to the flow of electric current."
-    # SDC http://purl.obolibrary.org/obo/BFO_0000020
-    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
-    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
-    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
-    return ns[class_q_name]
-
-def create_voltage_class(g: Graph, ns: Namespace) -> URIRef:
-    class_name = "Voltage"
-    class_q_name = class_name
-    label = class_name
-    definition = "A voltage is a difference in potential between two points in a circuit."
-    # SDC http://purl.obolibrary.org/obo/BFO_0000020
-    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
-    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
-    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
-    return ns[class_q_name]
-
-def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
-    ohm_instance_q_name = "ohm"
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[ohm_instance_q_name], RDF.type, CCO.measurementUnit))
-    g.add((ns[ohm_instance_q_name], RDFS.label, Literal("Ohm measurement unit instance", lang='en')))
-    logger.info("Created ohm measurement unit instance.")
-    ohm_instance_uri = ns[ohm_instance_q_name]
-    return ohm_instance_uri
-
-
-def create_volt_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
-    volt_instance_q_name = "Volt"
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[volt_instance_q_name], RDF.type, CCO.measurementUnit))
-    g.add((ns[volt_instance_q_name], RDFS.label, Literal("Volt measurement unit instance", lang='en')))
-    logger.info("Created volt measurement unit instance.")
-    volt_instance_uri = ns[volt_instance_q_name]
-    return volt_instance_uri
-
-
-def create_celsius_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
-    celsius_instance_q_name = "C"
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[celsius_instance_q_name], RDF.type, CCO.measurementUnit))
-    g.add((ns[celsius_instance_q_name], RDFS.label, Literal("Celsius measurement unit instance", lang='en')))
-    logger.info("Created Celsius measurement unit instance.")
-    celsius_instance_uri = ns[celsius_instance_q_name]
-    return celsius_instance_uri
-
-
-def create_pascal_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
-    pa_instance_q_name = "Pa"
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[pa_instance_q_name], RDF.type, CCO.measurementUnit))
-    g.add((ns[pa_instance_q_name], RDFS.label, Literal("Pa measurement unit instance", lang='en')))
-    logger.info("Created Pa measurement unit instance.")
-    pa_instance_uri = ns[pa_instance_q_name]
-    return pa_instance_uri
 
 
 if __name__ == "__main__":
