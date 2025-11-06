@@ -88,17 +88,14 @@ data:Jet_Engine_2
 # Particulars
 #################################################################
 
-_:restriction
-    a [ a                  owl:Class ;
-        owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
-                                                owl:hasValue   data:maximum_knot_approach_speed_ice ;
-                                                owl:onProperty model:has ] ) ] .
-
 data:Airbus_A321_Spec
     a               owl:NamedIndividual ;
-    a               [ a              owl:Restriction ;
-                      owl:allValuesFrom   _:restriction;
-                      owl:onProperty cco:ont00001942 ] ;
+    a               [ a                 owl:Restriction ;
+                      owl:allValuesFrom [ a                  owl:Class ;
+                                          owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
+                                                                                  owl:hasValue   data:maximum_knot_approach_speed_ice ;
+                                                                                  owl:onProperty model:has ] ) ] ;
+                      owl:onProperty    cco:ont00001942 ] ;
     cco:ont00001942 data:Airbus_A321_111_1 ;
     rdfs:label      "Airbus A321-111" ;
     skos:definition "Airbus A321-111" .
