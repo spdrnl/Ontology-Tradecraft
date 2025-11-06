@@ -101,7 +101,7 @@ ex:UnitMustMatchSDCMeasuredOhm a sh:NodeShape ;
     sh:targetNode :ohm ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class bfo:BFO_0000020 ;
+        sh:class :Resistance ;
         sh:minCount 1;
         sh:message "Ohm unit must match electrical resistance quality."
     ] .
@@ -110,7 +110,7 @@ ex:UnitMustMatchSDCMeasuredVolt a sh:NodeShape ;
     sh:targetNode :Volt ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class bfo:BFO_0000020 ;
+        sh:class :Voltage ;
         sh:minCount 1;
         sh:message "Volt unit must match voltage quality."
     ] .
@@ -119,7 +119,7 @@ ex:UnitMustMatchSDCMeasuredPa a sh:NodeShape ;
     sh:targetNode :Pa ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class bfo:BFO_0000020 ;
+        sh:class :Pressure ;
         sh:minCount 1;
         sh:message "Pa unit must match resistance quality."
     ] .
@@ -128,7 +128,7 @@ ex:UnitMustMatchSDCMeasuredTemperature a sh:NodeShape ;
     sh:targetNode :C ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class bfo:BFO_0000020 ;
+        sh:class :Temperature ;
         sh:minCount 1;
         sh:message "Temperature unit must match temperature quality."
     ] .

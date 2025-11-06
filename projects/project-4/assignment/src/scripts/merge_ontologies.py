@@ -7,7 +7,7 @@ from rdflib import Graph, Namespace
 # Path settings
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-def load_graph(ttl_paths: List[Path]) -> Graph:
+def merge_graphs(ttl_paths: List[Path]) -> Graph:
     """
 
     """
@@ -37,7 +37,7 @@ def load_graph(ttl_paths: List[Path]) -> Graph:
 def main():
     # load the ttl's
     ttl_paths = [SRC_ROOT / "measure_cco_inferred.ttl", SRC_ROOT / "cco_merged.ttl"]
-    graph = load_graph(ttl_paths)
+    graph = merge_graphs(ttl_paths)
 
     # set the default namespace
     default_ns = Namespace("http://www.newfoundland.nl/otc/project-4")

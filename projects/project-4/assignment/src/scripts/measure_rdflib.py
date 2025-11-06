@@ -1,4 +1,3 @@
-import argparse
 import base64
 import logging
 import pathlib
@@ -11,13 +10,11 @@ import pandas as pd
 import rdflib
 from pandas import DataFrame
 from rdflib import Namespace, URIRef, Literal, Graph
-
 from rdflib import OWL, RDF, RDFS, SKOS, XSD
-
-from merge_ontologies import load_graph
 
 from bfo import BFO
 from cco import CCO
+from merge_ontologies import merge_graphs
 
 logger = logging.getLogger(__name__)
 
@@ -29,48 +26,14 @@ OUTPUT_PATH = SRC_ROOT / "measure_cco.ttl"
 
 # Namespace settings
 DEFAULT_NS = Namespace("http://www.newfoundland.nl/otc/project-4/")
-NS_CCO = Namespace("https://www.commoncoreontologies.org/")
 MATERIAL_ARTIFACT_CLASS_NAME = "MaterialArtifact"
 
 
-def get_args() -> argparse.Namespace:
-    """
-    Fetches command-line arguments required for processing SPARQL query files against Turtle files
-    and outputs the results into a CSV file. Parses the provided arguments and validates their
-    presence and expected types.
-
-    :return: Namespace object containing parsed command-line arguments.
-    :rtype: argparse.Namespace
-    """
-    # Initialize
-    parser = argparse.ArgumentParser(
-        description="The program import a normalized readings CSV input file and outputs an ontology in Turtle (TTL) file.",
-        epilog="Happy ontology hacking!",
-        prog="create-rdf",
-    )
-
-    # Adding optional parameters
-    parser.add_argument(
-        "-i", "--input-file", help="CSV input file.", default=INPUT_PATH, type=str
-    )
-
-    parser.add_argument(
-        "-o", "--output-file", help="Turtle output file.", default=OUTPUT_PATH, type=str
-    )
-
-    parser.add_argument(
-        "-ns", "--namespace", help="Namespace.", default=DEFAULT_NS, type=str
-    )
-
-    return parser.parse_args()
-
-
 def main():
-    # Resolve arguments
-    args = get_args()
-    input_file = args.input_file
-    output_file = args.output_file
-    namespace = args.namespace
+    # Settings
+    input_file = INPUT_PATH
+    output_file = OUTPUT_PATH
+    namespace = DEFAULT_NS
     ns = Namespace(namespace)
 
     # Read CSV
@@ -86,19 +49,15 @@ def main():
     # Write graph to file
     unmerged_file = SRC_ROOT / "measure_cco_unmerged.ttl"
     print(f"Writing plain KG to {unmerged_file}.")
-    write_ttl_kg(g, unmerged_file, Namespace(ns))
+    write_ttl_kg(g, unmerged_file, ns)
 
     # Merge with CCO
     print(f"Merging plain KG with CCO to {output_file}.")
     ttl_paths = [unmerged_file, SRC_ROOT / "cco_merged.ttl"]
-    graph = load_graph(ttl_paths)
+    merged_g = merge_graphs(ttl_paths)
 
-    # set the default namespace
-    default_ns = Namespace("http://www.newfoundland.nl/otc/project-4")
-    graph.bind("", default_ns)
-
-    # output the graph
-    graph.serialize(str(output_file), format="turtle")
+    # Write merged graph to file
+    write_ttl_kg(merged_g, output_file, ns)
     print(f"Merged graph saved to {output_file}")
 
 
@@ -108,12 +67,12 @@ def translate_to_rdf(df: DataFrame, g: Graph, ns: Namespace):
     create_mice_sensor_observations(df, g, ns)
 
 
-def create_ontology(g: Graph, namespace):
+def create_ontology(g: Graph, namespace: str):
     ontology_uri = URIRef(namespace)
     g.add((ontology_uri, RDF.type, OWL.Ontology))
     g.add((ontology_uri, RDFS.label, Literal("Sensor Data Ontology", lang='en')))
     g.add((ontology_uri, RDFS.comment, Literal("An ontology for sensor readings and measurements", lang='en')))
-    logger.info("Created ontology.")
+    logger.info("Created ontology term.")
 
 
 def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
@@ -130,29 +89,12 @@ def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
 
 def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
     # Create SDC class mappings
-    sdc_class_mappings = {
-        "temperature": create_subclass(ns,
-                                       "Temperature",
-                                       "A temperature is a measure of the amount of thermal energy of a material.",
-                                       BFO.specificallyDependentContinuant, g),
-        "pressure": create_subclass(ns,
-                                    "Pressure",
-                                    "A pressure is an amount of force excerted on a surface.",
-                                    BFO.specificallyDependentContinuant, g),
-        "voltage": create_subclass(ns,
-                                   "Voltage",
-                                   "A voltage is a difference in potential between two points in a circuit.",
-                                   BFO.specificallyDependentContinuant, g),
-        "resistance": create_subclass(ns,
-                                      "Resistance",
-                                      "A resistance is a measure of opposition to the flow of electric current.",
-                                      BFO.specificallyDependentContinuant, g)
-    }
+    sdc_class_mapping = get_sdc_class_mapping(g, ns)
 
     # Create SDC instances
     sdc_instances = df[['sdc_kind', 'artifact_id']].drop_duplicates()
     for _, row in sdc_instances.iterrows():
-        sdc_subclass_uri = sdc_class_mappings.get(row.sdc_kind, None)
+        sdc_subclass_uri = sdc_class_mapping.get(row.sdc_kind, None)
         if sdc_subclass_uri is None:
             print(f"Unknown SDC subclass for unit: {row.sdc_kind}")
             exit(1)
@@ -171,6 +113,28 @@ def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
     logger.info(f"Created {len(sdc_instances)} sdc instances and added these to the material artifacts.")
 
 
+def get_sdc_class_mapping(g: Graph, ns: Namespace) -> dict[str, URIRef]:
+    sdc_class_mapping = {
+        "temperature": create_subclass(ns,
+                                       "Temperature",
+                                       "A temperature is a measure of the amount of thermal energy of a material.",
+                                       BFO.specificallyDependentContinuant, g),
+        "pressure": create_subclass(ns,
+                                    "Pressure",
+                                    "A pressure is an amount of force excerted on a surface.",
+                                    BFO.specificallyDependentContinuant, g),
+        "voltage": create_subclass(ns,
+                                   "Voltage",
+                                   "A voltage is a difference in potential between two points in a circuit.",
+                                   BFO.specificallyDependentContinuant, g),
+        "resistance": create_subclass(ns,
+                                      "Resistance",
+                                      "A resistance is a measure of opposition to the flow of electric current.",
+                                      BFO.specificallyDependentContinuant, g)
+    }
+    return sdc_class_mapping
+
+
 def create_subclass(ns: Namespace, class_q_name: str, definition: str, subsuming_class: URIRef, g: Graph) -> URIRef:
     uri_ref = ns[class_q_name]
     g.add((uri_ref, RDFS.subClassOf, subsuming_class))
@@ -179,33 +143,46 @@ def create_subclass(ns: Namespace, class_q_name: str, definition: str, subsuming
     return uri_ref
 
 
-def create_observation_instance(g: Graph, ns: Namespace, row, unit_uri: URIRef):
-    """Create a single sensor observation instance in the graph."""
-    mice_instance_name = unique_qname("mice-sensor-observation",
-                                      [row.artifact_id, row.unit_label, row.timestamp,
-                                       str(row.value), row.sdc_kind])
-
-    mice_instance_label = (f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} "
-                           f"at {row.timestamp} of {row.value}")
-
-    mice_instance_uri = ns[mice_instance_name]
-
-    # Add observation type and label
-    g.add((mice_instance_uri, RDF.type, CCO.measurementInformationContentEntity))
-    g.add((mice_instance_uri, RDFS.label, Literal(mice_instance_label, lang='en')))
-
-    # Add measurement value
-    g.add((mice_instance_uri, CCO.hasDecimalValue, Literal(row.value, datatype=XSD.decimal, normalize=False)))
-
-    # Add measurement unit
-    g.add((mice_instance_uri, CCO.usesMeasurementUnit, unit_uri))
-
-    # Link to SDC instance
-    sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
-    g.add((mice_instance_uri, CCO.isAMeasurementOf, URIRef(ns[sdc_instance_q_name])))
-
-
 def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
+    unit_mapping = get_measurement_unit_mapping(g, ns)
+
+    # Create sensor observation instances
+    observation_count = 0
+    for index, row in df.iterrows():
+        observation_count += 1
+
+        # Create instance name, label and URI
+        mice_instance_name = unique_qname("mice-sensor-observation",
+                                          [row.artifact_id, row.unit_label, row.timestamp,
+                                           str(row.value), row.sdc_kind])
+        mice_instance_label = (f"Sensor observation on {row.artifact_id} of type {row.sdc_kind} "
+                               f"at {row.timestamp} of {row.value}")
+        mice_instance_uri = ns[mice_instance_name]
+
+        # Resolve measurement unit URI
+        unit_uri = unit_mapping.get(row.unit_label, None)
+        if unit_uri is None:
+            print(f"Unknown unit label: {row.unit_label}")
+            exit(1)
+
+        # Create observation instance
+        g.add((mice_instance_uri, RDF.type, CCO.measurementInformationContentEntity))
+        g.add((mice_instance_uri, RDFS.label, Literal(mice_instance_label, lang='en')))
+
+        # Add measurement value
+        g.add((mice_instance_uri, CCO.hasDecimalValue, Literal(row.value, datatype=XSD.decimal, normalize=False)))
+
+        # Add measurement unit
+        g.add((mice_instance_uri, CCO.usesMeasurementUnit, unit_uri))
+
+        # Link to SDC instance
+        sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
+        g.add((mice_instance_uri, CCO.isAMeasurementOf, URIRef(ns[sdc_instance_q_name])))
+
+    logger.info(f"Created {observation_count} MICE sensor observation instances.")
+
+
+def get_measurement_unit_mapping(g: Graph, ns: Namespace) -> dict[str, URIRef]:
     # Create measurement unit instances and build mapping
     unit_mapping = {
         "Pa": create_instance("Pa", "Pascal measurement unit instance", CCO.measurementUnit, g, ns),
@@ -213,18 +190,7 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
         "volt": create_instance("Volt", "Volt measurement unit instance", CCO.measurementUnit, g, ns),
         "ohm": create_instance("ohm", "Ohm measurement unit instance", CCO.measurementUnit, g, ns)
     }
-
-    # Create sensor observation instances
-    observation_count = 0
-    for index, row in df.iterrows():
-        observation_count += 1
-        unit_uri = unit_mapping.get(row.unit_label, None)
-        if unit_uri is None:
-            print(f"Unknown unit label: {row.unit_label}")
-            exit(1)
-        create_observation_instance(g, ns, row, unit_uri)
-
-    logger.info(f"Created {observation_count} MICE sensor observation instances.")
+    return unit_mapping
 
 
 def create_instance(instance_q_name: str, instance_label: str, instance_type: URIRef, g: Graph,

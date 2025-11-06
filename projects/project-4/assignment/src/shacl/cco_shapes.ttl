@@ -101,7 +101,7 @@ ex:UnitMustMatchSDCMeasuredOhm a sh:NodeShape ;
     sh:targetNode :ohm ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class :ElectricalResistance ;
+        sh:class :Resistance ;
         sh:minCount 1;
         sh:message "Ohm unit must match electrical resistance quality."
     ] .
