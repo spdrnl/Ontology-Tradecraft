@@ -14,7 +14,7 @@
 @base <http://www.newfoundland.nl/otc/data/> .
 
 <http://www.newfoundland.nl/otc/data>
-    rdf:type    owl:Ontology .
+    rdf:type owl:Ontology .
 
 ##################################################################
 #    Task 1
@@ -88,22 +88,31 @@ data:Jet_Engine_2
 # Particulars
 #################################################################
 
-data:Airbus_A321_111_Spec_2
+_:restriction
+    a [ a                  owl:Class ;
+        owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
+                                                owl:hasValue   data:maximum_knot_approach_speed_ice ;
+                                                owl:onProperty model:has ] ) ] .
+
+data:Airbus_A321_Spec
     a               owl:NamedIndividual ;
-    cco:ont00001942 data:Airbus_A321_111_1;
+    a               [ a              owl:Restriction ;
+                      owl:allValuesFrom   _:restriction;
+                      owl:onProperty cco:ont00001942 ] ;
+    cco:ont00001942 data:Airbus_A321_111_1 ;
     rdfs:label      "Airbus A321-111" ;
     skos:definition "Airbus A321-111" .
 
+data:Airbus_A321_111_1
+    rdf:type   owl:NamedIndividual, model:Fixed_Wing ;
+    model:has  data:maximum_knot_approach_speed_ice ;
+    rdfs:label "Airbus A321-111 instance" .
 
 data:maximum_knot_approach_speed_ice
     rdf:type                              cco:ont00000127 ;
     model:has_maximum_knot_approach_speed "142"^^xsd:integer ;
     rdfs:label                            "maximum knot approach speed of 142" .
 
-data:Airbus_A321_111_1
-    rdf:type        owl:NamedIndividual, model:Fixed_Wing ;
-    model:has       data:maximum_knot_approach_speed_ice ;
-    rdfs:label      "Airbus A321-111 instance" .
 
 data:Measurement_Unit_of_Knots
     rdf:type        owl:NamedIndividual, cco:ont00000120 ;
