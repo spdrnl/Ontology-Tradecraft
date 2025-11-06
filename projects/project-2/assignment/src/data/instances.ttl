@@ -14,8 +14,7 @@
 @base <http://www.newfoundland.nl/otc/data/> .
 
 <http://www.newfoundland.nl/otc/data>
-    rdf:type    owl:Ontology ;
-    owl:imports <http://www.newfoundland.nl/otc/model> .
+    rdf:type    owl:Ontology .
 
 ##################################################################
 #    Task 1
@@ -89,17 +88,12 @@ data:Jet_Engine_2
 # Particulars
 #################################################################
 
-data:Airbus_A320n_Spec_2
+data:Airbus_A321_111_Spec_2
     a               owl:NamedIndividual ;
-    a               [ a                 owl:Restriction ;
-                      owl:allValuesFrom [ a                  owl:Class ;
-                                          owl:intersectionOf ( model:Fixed_Wing [ a              owl:Restriction ;
-                                                                                  owl:hasValue   data:maximum_knot_approach_speed_ice ;
-                                                                                  owl:onProperty cco:ont00001920 ] ) ] ;
-                      owl:onProperty    cco:ont00001942 ] ;
-    rdfs:label      "Airbus A321-111", "Airbus A320n Spec 2" ;
-    skos:definition "Airbus A321-111", "Airbus A320n Spec 2" ;
-    cco:ont00001942 data:Airbus_A321_111_1 .
+    cco:ont00001942 data:Airbus_A321_111_1;
+    rdfs:label      "Airbus A321-111" ;
+    skos:definition "Airbus A321-111" .
+
 
 data:maximum_knot_approach_speed_ice
     rdf:type                              cco:ont00000127 ;
@@ -108,8 +102,8 @@ data:maximum_knot_approach_speed_ice
 
 data:Airbus_A321_111_1
     rdf:type        owl:NamedIndividual, model:Fixed_Wing ;
-    cco:ont00001920 data:maximum_knot_approach_speed_ice ;
-    rdfs:label      "Airbus A321-111 1" .
+    model:has       data:maximum_knot_approach_speed_ice ;
+    rdfs:label      "Airbus A321-111 instance" .
 
 data:Measurement_Unit_of_Knots
     rdf:type        owl:NamedIndividual, cco:ont00000120 ;
@@ -167,8 +161,8 @@ data:Artifact_design_1
 
 data:Adaptability_evaluation_1
     rdf:type        model:Adaptability_Evaluation ;
-    rdfs:label      "Adapt. Evaluation 1" ;
-    skos:definition "Adapt. Evaluation 1" .
+    rdfs:label      "Adaptability Evaluation" ;
+    skos:definition "Adaptability Evaluation" .
 
 data:Adaptability_evaluation_result_1
     rdf:type        model:Adaptability_Evaluation_Result ;
@@ -180,7 +174,7 @@ data:Act_of_aircraft_processing_1
     rdf:type        owl:NamedIndividual, model:Act_of_Aircraft_Processing ;
     #bfo:BFO_0000055 data:Aerospace_engineer_role_1 ;
     bfo:BFO_0000055 data:Adaptability_evaluation_1 ;
-    rdfs:label      "Act of Aircraft Processing 1" .
+    rdfs:label      "Act of Aircraft Processing" .
 
 data:Aerospace_engineer_SOC_title_1
     rdf:type        owl:NamedIndividual, model:SOC_Title_1 ;

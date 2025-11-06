@@ -11,10 +11,7 @@
 @base <http://www.newfoundland.nl/otc/model/> .
 
 <http://www.newfoundland.nl/otc/model>
-    rdf:type    owl:Ontology ;
-    owl:imports <https://www.commoncoreontologies.org/2024-11-06/InformationEntityOntology>,
-                <https://www.commoncoreontologies.org/ArtifactOntology>,
-                <https://www.commoncoreontologies.org/ExtendedRelationOntology> .
+    rdf:type    owl:Ontology .
 
 #################################################################
 #    Task 1
