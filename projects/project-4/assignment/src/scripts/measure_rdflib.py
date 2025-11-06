@@ -115,12 +115,9 @@ def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
 
 def get_sdc_class_mapping(g: Graph, ns: Namespace) -> dict[str, URIRef]:
     sdc_class_mapping = {
-        "temperature": create_subclass(ns,
-                                       "Temperature",
-                                       "A temperature is a measure of the amount of thermal energy of a material.",
-                                       BFO.specificallyDependentContinuant, g),
+        "temperature": CCO.temperature,
         "pressure": create_subclass(ns,
-                                    "Pressure",
+                                    "PressureSdc",
                                     "A pressure is an amount of force excerted on a surface.",
                                     BFO.specificallyDependentContinuant, g),
         "voltage": create_subclass(ns,
