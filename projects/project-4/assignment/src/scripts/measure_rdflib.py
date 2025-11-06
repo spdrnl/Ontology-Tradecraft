@@ -297,16 +297,44 @@ def create_material_artifacts(df: DataFrame, g: Graph, ns: Namespace):
 
 
 def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
+    # create classes
+
+    # temperature
+    temperature_class_q_name = create_temperature_class(g, ns)
+
+    # pressure
+    pressure_class_q_name = create_pressure_class(g, ns)
+
+    # voltage
+    voltage_class_q_name = create_voltage_class(g, ns)
+
+    # resistance
+    resistance_class_q_name = create_resistance_class(g, ns)
+
     n = 0
     sdc_instances = df[['sdc_kind', 'artifact_id']].drop_duplicates()
     for _, row in sdc_instances.iterrows():
         n+=1
 
+        # Determine SDC subclass
+        if (row.sdc_kind == "pressure"):
+            sdc_subclass_uri = pressure_class_q_name
+        elif (row.sdc_kind == "temperature"):
+            sdc_subclass_uri = temperature_class_q_name
+        elif (row.sdc_kind == "resistance"):
+            sdc_subclass_uri = resistance_class_q_name
+        elif (row.sdc_kind == "voltage"):
+            sdc_subclass_uri = voltage_class_q_name
+        else:
+            print(f"Unknown SDC subclass for unit: {row.sdc_kind}")
+            exit(1)
+
         # Create sdc instance
         sdc_instance_q_name = unique_qname(row.sdc_kind, [row.sdc_kind, row.artifact_id])
         label = f"Specifically dependent continuant instance of kind {row.sdc_kind} for {row.artifact_id}."
         # SDC http://purl.obolibrary.org/obo/BFO_0000020
-        g.add((ns[sdc_instance_q_name], RDF.type, URIRef("http://purl.obolibrary.org/obo/BFO_0000020")))
+        g.add((ns[sdc_instance_q_name], RDF.type, BFO.specificallyDependentContinuant))
+        g.add((ns[sdc_instance_q_name], RDF.type, sdc_subclass_uri))
         g.add((ns[sdc_instance_q_name], RDFS.label, Literal(label, lang='en')))
 
         # Add these instances to the material artifacts via bearer of
@@ -318,30 +346,10 @@ def create_sdc_instances(df: DataFrame, g: Graph, ns: Namespace):
 
 
 def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
-    # Create Pascal measurement unit instance
-    # Pa instance https://www.commoncoreontologies.org/ont00001559"
-    # pa_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001559")
     pa_instance_uri = create_pascal_measurement_unit_instance(g, ns)
-
-    # Create Celsius measurement unit instance
-    # Celsius instance https://www.commoncoreontologies.org/ont00001606
-    # celsius_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001606")
     celsius_instance_uri = create_celsius_measurement_unit_instance(g, ns)
-
-    # Create Volt measurement unit instance
-    # Volt instance https://www.commoncoreontologies.org/ont00001450
-    # volt_instance_uri = URIRef("https://www.commoncoreontologies.org/ont00001450")
     volt_instance_uri = create_volt_measurement_unit_instance(g, ns)
-
-    # Create ohm measurement unit instance
     ohm_instance_uri = create_ohm_measurement_unit_instance(g, ns)
-
-    # Create ohm measurement unit class
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    #create_ohm_measurement_unit_class(g, ns)
-
-    # Create sensor readings class
-    #create_sensor_reading_class(g, ns)
 
     # Create sensor readings instances
     n = 0
@@ -386,51 +394,49 @@ def create_mice_sensor_observations(df: DataFrame, g: Graph, ns: Namespace):
 
     logger.info("Created {n} MICE sensor observation instances.")
 
+def create_temperature_class(g: Graph, ns: Namespace) -> URIRef:
+    class_name = "Temperature"
+    class_q_name = class_name
+    label = class_name
+    definition = "A temperature is a measure of the amount of thermal energy of a material."
+    # SDC http://purl.obolibrary.org/obo/BFO_0000020
+    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
+    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
+    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
+    return ns[class_q_name]
 
-def create_electrical_resistance_class(g: Graph, ns: Namespace) -> URIRef:
-    resistance_class_name = "ElectricalResistance"
-    # Quality http://purl.obolibrary.org/obo/BFO_0000019
-    g.add((ns[resistance_class_name], RDFS.subClassOf, BFO.quality))
-    g.add((ns[resistance_class_name], RDFS.label, label_from_class(resistance_class_name)))
-    g.add((ns[resistance_class_name], SKOS.definition,
-           Literal("A electrical resistance is a measure of its opposition to the flow of electric current.",
-                   lang='en')))
-    resitance_uri = ns[resistance_class_name]
-    logger.info("Created electrical resistance class.")
-    return resitance_uri
+def create_pressure_class(g: Graph, ns: Namespace) -> URIRef:
+    class_name = "Pressure"
+    class_q_name = class_name
+    label = class_name
+    definition = "A pressure is an amount of force excerted on a surface."
+    # SDC http://purl.obolibrary.org/obo/BFO_0000020
+    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
+    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
+    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
+    return ns[class_q_name]
 
+def create_resistance_class(g: Graph, ns: Namespace) -> URIRef:
+    class_name = "ElectricalResistance"
+    class_q_name = class_name
+    label = class_name
+    definition = "A electrical resistance is a measure of opposition to the flow of electric current."
+    # SDC http://purl.obolibrary.org/obo/BFO_0000020
+    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
+    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
+    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
+    return ns[class_q_name]
 
 def create_voltage_class(g: Graph, ns: Namespace) -> URIRef:
-    voltage_class_name = "Voltage"
-    # Quality http://purl.obolibrary.org/obo/BFO_0000019
-    g.add((ns[voltage_class_name], RDFS.subClassOf, BFO.quality))
-    g.add((ns[voltage_class_name], RDFS.label, label_from_class(voltage_class_name)))
-    g.add((ns[voltage_class_name], SKOS.definition,
-           Literal("A voltage is a measure of an electrical potential difference.", lang='en')))
-    voltage_uri = ns[voltage_class_name]
-    logger.info("Created Voltage class.")
-    return voltage_uri
-
-
-def create_ohm_measurement_unit_class(g: Graph, ns: Namespace):
-    ohm_class_name = "OhmMeasurementUnit"
-    # Measurement unit https://www.commoncoreontologies.org/ont00000120
-    g.add((ns[ohm_class_name], RDFS.subClassOf, CCO.measurementUnit))
-    g.add((ns[ohm_class_name], RDFS.label, label_from_class(ohm_class_name)))
-    g.add((ns[ohm_class_name], SKOS.definition,
-           Literal("An ohm is a measurement unit of electromagnetic resistance.", lang='en')))
-    logger.info("Created ohm measurement unit class.")
-
-
-def create_sensor_reading_class(g: Graph, ns: Namespace):
-    class_name = "SensorObservation"
-    # MICE https://www.commoncoreontologies.org/ont00001163
-    g.add((ns[class_name], RDFS.subClassOf, CCO.measurementInformationContentEntity))
-    g.add((ns[class_name], RDFS.label, label_from_class(class_name)))
-    g.add((ns[class_name], SKOS.definition,
-           Literal("A sensor observation is a measurement observation generated by a sensor.", lang='en')))
-    logger.info("Created SensorObservation class.")
-
+    class_name = "Voltage"
+    class_q_name = class_name
+    label = class_name
+    definition = "A voltage is a difference in potential between two points in a circuit."
+    # SDC http://purl.obolibrary.org/obo/BFO_0000020
+    g.add((ns[class_q_name], RDFS.subClassOf, BFO.specificallyDependentContinuant))
+    g.add((ns[class_q_name], RDFS.label, Literal(label, lang='en')))
+    g.add((ns[class_q_name], SKOS.definition, Literal(definition, lang='en')))
+    return ns[class_q_name]
 
 def create_ohm_measurement_unit_instance(g: Graph, ns: Namespace) -> URIRef:
     ohm_instance_q_name = "ohm"
