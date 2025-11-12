@@ -43,7 +43,7 @@
   - [Lecture on ML and Ontologies]() 
 
 * **Week 12** Embeddings and semantic similarity
-  - [Lecture on Embeddings with MOWL]() 
+  - [Lecture on Embeddings with MOWL](https://youtu.be/2papsQocRFI) 
 
 * **Week 13** Prompting for ontology building, SPARQL generation
   - [Lecture on LLMs in Ontology Engineering 1]() 
