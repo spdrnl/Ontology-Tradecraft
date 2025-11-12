@@ -40,7 +40,7 @@
   - [Due: Project 4 - ETL + Validation Midterm](projects/project-4/README.md)
 
 * **Week 11** Link prediction, classification, evaluation of ontology-based ML
-  - [Lecture on ML and Ontologies]() 
+  - [Lecture on ML and Ontologies](https://youtu.be/43Eu8R3Bp9c) 
 
 * **Week 12** Embeddings and semantic similarity
   - [Lecture on Embeddings with MOWL](https://youtu.be/2papsQocRFI) 
