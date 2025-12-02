@@ -70,7 +70,6 @@ ex:MiceMustHaveOneUnitAndOneNumericValue
   sh:property [
     sh:path cco:ont00001769 ;
     sh:minCount 1 ;
-    sh:maxCount 1 ;
     sh:value  xsd:decimal ;
     sh:message "MICE must have one numeric value (completeness)." ;
     sh:severity sh:Violation
@@ -78,7 +77,6 @@ ex:MiceMustHaveOneUnitAndOneNumericValue
   sh:property [
     sh:path cco:ont00001863 ;
     sh:minCount 1 ;
-    sh:maxCount 1 ;
     sh:value cco:ont00000120 ;
     sh:message "MICE must have one unit." ;
     sh:severity sh:Violation
@@ -119,7 +117,7 @@ ex:UnitMustMatchSDCMeasuredPa a sh:NodeShape ;
     sh:targetNode :Pa ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class :Pressure ;
+        sh:class :PressureSdc ;
         sh:minCount 1;
         sh:message "Pa unit must match resistance quality."
     ] .
@@ -128,7 +126,7 @@ ex:UnitMustMatchSDCMeasuredTemperature a sh:NodeShape ;
     sh:targetNode :C ;
     sh:property [
         sh:path ([ sh:inversePath cco:ont00001863 ] cco:ont00001966) ;
-        sh:class :Temperature ;
+        sh:class cco:ont00000441 ;
         sh:minCount 1;
         sh:message "Temperature unit must match temperature quality."
     ] .

@@ -146,6 +146,7 @@ jobs:
           ASK {{
             ?a a <{IRI_ART}> ;
                <{IRI_BEARER_OF}> ?sdc .
+          
             ?sdc a <{IRI_SDC}> .
 
             ?m a <{IRI_MICE}> ;

@@ -2478,7 +2478,7 @@ cco:ont00001939 rdf:type owl:ObjectProperty ;
                                           )
                             ] ;
                  rdfs:label "is affiliated with"@en ;
-                 skos:definition "x is_affiliated_with y iff x and y are instances of Agent, such that they have any kind of social or business relationship."@en ;
+                 skos:definition "x is affiliated with y iff x and y are instances of Agent, such that they have any kind of social or business relationship."@en ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/AgentOntology"^^xsd:anyURI .
 
 
@@ -2829,7 +2829,7 @@ cco:ont00001977 rdf:type owl:ObjectProperty ;
                                           )
                             ] ;
                  rdfs:label "has affiliate"@en ;
-                 skos:definition "x is_affiliated_with y iff x and y are instances of Agent, such that they have any kind of social or business relationship."@en ;
+                 skos:definition "x has affiliate y iff x and y are instances of Agent, such that they have any kind of social or business relationship."@en ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/AgentOntology"^^xsd:anyURI .
 
 
@@ -5376,7 +5376,7 @@ cco:ont00000182 rdf:type owl:Class ;
                  rdfs:subClassOf cco:ont00000123 ;
                  rdfs:label "Act of Thanking"@en ;
                  skos:definition "An Act of Expressive Communication performed by expressing gratitude."@en ;
-                 cco:ont00001754 " http://www.merriam-webster.com/dictionary/thanks" ;
+                 cco:ont00001754 "http://www.merriam-webster.com/dictionary/thanks" ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/EventOntology"^^xsd:anyURI .
 
 
@@ -8840,7 +8840,7 @@ cco:ont00000547 rdf:type owl:Class ;
 ###  https://www.commoncoreontologies.org/ont00000548
 cco:ont00000548 rdf:type owl:Class ;
                  rdfs:subClassOf cco:ont00000997 ;
-                 dcterms:bibliographicCitation "Vulnerability | Definition of Vulnerability by Oxford Dictionary on Lexico.Com Also Meaning of Vulnerability. https://web.archive.org/web/20210118111731/https://www.lexico.com/en/definition/vulnerability. Accessed 19 Dec. 2022. " ;
+                 dcterms:bibliographicCitation "Vulnerability | Definition of Vulnerability by Oxford Dictionary on Lexico.Com Also Meaning of Vulnerability. https://web.archive.org/web/20210118111731/https://www.lexico.com/en/definition/vulnerability. Accessed 19 Dec. 2022." ;
                  dcterms:creator "https://cubrc.org"^^xsd:anyURI ;
                  rdfs:label "Vulnerability"@en ;
                  skos:definition "A Disrupting Disposition the realization of which would disrupt a process that the bearer of the Disrupting Disposition has an interest in."@en ;
@@ -15942,7 +15942,7 @@ cco:ont00001289 rdf:type owl:Class ;
                                "Damaged"@en ,
                                "Injured"@en ;
                  skos:definition "A Stasis of Specifically Dependent Continuant in which some Independent Continuant bears a Quality or Realizable Entity that has suffered impairment (i.e., a decrease or loss) due to a previous action or event such that the Independent Continuant is now of lesser value, usefulness, or functionality."@en ;
-                 skos:scopeNote "This class can be used to instantiate instances that might otherwise be treated by defined classes such as Damaged Vehicle or Wounded Person. The Independent Continuant and Quality or Realizable Entity are participants of the stasis which can in turn be related to the temporal interval via the occurs on property. "@en ;
+                 skos:scopeNote "This class can be used to instantiate instances that might otherwise be treated by defined classes such as Damaged Vehicle or Wounded Person. The Independent Continuant and Quality or Realizable Entity are participants of the stasis which can in turn be related to the temporal interval via the occurs on property."@en ;
                  cco:ont00001754 "http://www.thefreedictionary.com/damaged" ;
                  cco:ont00001760 "https://www.commoncoreontologies.org/EventOntology"^^xsd:anyURI .
 

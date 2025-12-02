@@ -14,7 +14,7 @@ WHERE {
   FILTER (?element != ?element2)
   FILTER (!isBlank(?element))
   FILTER (!isBlank(?element2))
-  FILTER (str(?element1) < str(?element2))
+  FILTER (str(?element) < str(?element2))
   BIND (concat("Error: The following ontology elements have the same skos:definition ", str(?element), " and ", str(?element2)) AS ?error)
 }
 ORDER BY DESC(UCASE(str(?definition)))
