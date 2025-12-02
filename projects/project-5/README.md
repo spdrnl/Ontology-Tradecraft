@@ -21,7 +21,7 @@ By completing this project, you will:
 Each student will:
   - Choose a unique CCO module (e.g., AgentOntology.ttl, ArtifactOntology.ttl, etc.).
   - Extract textual definitions (skos:definition) into a CSV.
-  - Use an LLM to rewrite, normalize, and generate OWL 2 [EL-compliant candidate axioms](https://www.w3.org/TR/owl2-profiles/#OWL_2_EL) from those.
+  - Use an LLM to rewrite, normalize, and generate OWL 2 [EL-compliant candidate axioms](https://www.w3.org/TR/owl2-profiles/#OWL_2_EL) from those (see “What are OWL 2 EL–compliant candidate axioms?” below).
   - Train a MOWL model on the existing axioms in your module to learn a semantic embedding space.
   - Filter candidates using both MOWL cosine similarity and LLM-based plausibility scores, keeping axioms above the learned threshold.
   - Automatically merge accepted axioms back into the module.
@@ -67,5 +67,3 @@ Each student will:
 - `scripts/train_mowl.py` — Trains ELEmbeddings on `src/train.ttl` and evaluates on `src/valid.ttl`.
 - `scripts/filter_candidates_hybrid.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
 - `scripts/run_all.py` — One-command driver that executes the entire pipeline end-to-end.
-
-

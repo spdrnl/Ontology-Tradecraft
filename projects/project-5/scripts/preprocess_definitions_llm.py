@@ -36,9 +36,9 @@ def write_df_to_csv(df: pd.DataFrame, output_path: Path) -> None:
 
 
 def main():
-    logger.info("=======================================")
+    logger.info("===================================================================")
     logger.info("Preprocessing definitions (LLM enrichment via LangChain + Ollama)")
-    logger.info("=======================================")
+    logger.info("===================================================================")
 
     # Read input
     logger.info(f"Reading definitions CSV from: {INPUT_FILE}")
@@ -109,7 +109,7 @@ def main():
         (
             "system",
             (
-                "You are a precise ontology editor and an expert in Basic Formal Ontology (BFO) and CCO. "
+                "You are a precise ontology editor and an expert in Basic Formal Ontology (BFO) and Common Core Ontologies (CCO). "
                 "Improve class definitions in a clear, concise, academic style that adheres to BFO principles."
             ),
         ),
