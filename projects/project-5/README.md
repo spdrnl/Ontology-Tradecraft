@@ -96,6 +96,55 @@ and that `ollama serve` is running before executing the enrichment steps.
 - `scripts/filter_candidates_hybrid.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
 - `scripts/run_all.py` — One-command driver that executes the entire pipeline end-to-end.
 
+## How the embeddings are created (vector reference retrieval)
+
+When you enable vector-based reference retrieval (REFERENCE_MODE=vector), the project builds and queries a small local vector database (Milvus Lite) of BFO/CCO reference terms. This helps select the most relevant glossary entries to inject into the LLM prompt.
+
+Overview
+- Builder script: scripts/build_vector_db.py
+- Query path: scripts/preprocessing/enriching.py (build_reference_context when reference_mode=vector)
+- Libraries: sentence-transformers for embeddings, Milvus Lite (pymilvus) for vector search
+
+Creation (indexing) steps
+1) Source data: projects/project-5/data/bfo_cco_terms.csv with columns: label, definition, type (class|property|…)
+2) Text preparation per entry: the input text is concatenated as "{label} {definition}".
+3) Embeddings model: SentenceTransformer with model name from EMBEDDING_MODEL (default: sentence-transformers/all-MiniLM-L6-v2).
+4) Normalization: model.encode(..., normalize_embeddings=True) so vectors are length-normalized.
+5) Dimensionality: taken from the model (fallback 384 if not reported).
+6) Storage: two Milvus Lite collections are created with an AUTOINDEX and COSINE metric:
+   - VECTOR_COLLECTION_CLASSES (default: ref_classes) for entries with type == "class"
+   - VECTOR_COLLECTION_PROPERTIES (default: ref_properties) for entries with type == "property"
+   Each collection stores fields: label (VARCHAR), definition (VARCHAR), vector (FLOAT_VECTOR[dim]).
+7) Insert and load: All vectors are inserted and the collections are loaded for querying.
+
+Querying during enrichment
+- Per row, we form a query string: "{label} {definition}" (of the current ontology element).
+- We embed that query with the same model and normalize_embeddings=True.
+- We choose the collection based on the element type: class → classes collection; property → properties collection; unknown → both.
+- We run a vector search in Milvus with COSINE metric and limit = REF_TOP_K.
+- Results are returned as "- {label}: {definition}" lines to become the reference_context injected into the prompt.
+- If anything fails (missing deps/DB), the code logs a warning and falls back to the simple lexical retrieval path, so the pipeline keeps working.
+
+Configuration
+- VECTOR_DB_URI (default: data/milvus.db)
+- VECTOR_COLLECTION_CLASSES (default: ref_classes)
+- VECTOR_COLLECTION_PROPERTIES (default: ref_properties)
+- EMBEDDING_MODEL (default: sentence-transformers/all-MiniLM-L6-v2)
+- REF_TOP_K controls the number of entries retrieved per row.
+
+Build and use
+1) Build (run once, or after bfo_cco_terms.csv changes):
+   - python scripts/build_vector_db.py
+   - Optionally set env vars above to customize location, collections, or model.
+2) Enable vector retrieval for enrichment:
+   - REFERENCE_MODE=vector (e.g., set in .env)
+3) Run the enrichment as usual:
+   - python scripts/preprocess_definitions_llm.py
+
+Notes
+- The embeddings only affect how reference context is selected; they do not change the LLM itself.
+- Collections are rebuilt by the builder script to keep the index consistent with the source CSV; adapt the script if you want incremental updates.
+
 ## Prompt configuration (PROMPT_CONFIG_FILE)
 
 The enrichment script supports configurable prompts for classes and properties via a readable Markdown file (recommended) or a legacy INI file (backward compatible).

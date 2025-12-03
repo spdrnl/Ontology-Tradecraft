@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import List
 
 import dotenv
 from langchain_ollama import ChatOllama

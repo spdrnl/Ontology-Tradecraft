@@ -12,16 +12,20 @@ logger = logging.getLogger(__name__)
 config(logger)
 
 
+_embedder_cache = None
+_milvus_client_cache = None
+
+
 def enrich(elem_iri: str, elem_label: str, elem_type: str, elem_definition: str, chains, prompts, ref_entries,
            settings: dict) -> str:
   start = time.time()
 
   ref_type_by_label = {}
-  full_reference_context = ""
-
   ref_strings: List[str] = [f"{e['label']} — {e['definition']}" for e in ref_entries]
 
-  ref_ctx = build_reference_context(settings, ref_entries, full_reference_context, ref_strings, elem_label, elem_definition)
+  ref_ctx = build_reference_context(elem_label, elem_definition, elem_type, ref_entries, ref_strings,
+                                    settings)
+
   vars = {
     "label": elem_label or "",
     "definition": elem_definition or "",
@@ -120,8 +124,8 @@ def classify_context_counts(ref_type_by_label, ref_ctx_text: str):
   return n_class, n_prop, n_unk
 
 
-def build_reference_context(settings: dict, ref_entries, full_reference_context, ref_strings,
-                            term_label: str, term_definition: str) -> str:
+def build_reference_context(elem_label: str, elem_definition: str, elem_type: str, ref_entries, ref_strings,
+                            settings: dict) -> str:
   reference_mode = settings.get("reference_mode")
   ref_fuzzy_scorer = settings.get("ref_fuzzy_scorer")
   ref_top_k = settings.get("ref_top_k")
@@ -130,14 +134,39 @@ def build_reference_context(settings: dict, ref_entries, full_reference_context,
 
   if reference_mode == "off" or not ref_entries:
     return ""
-  if reference_mode == "full":
-    return full_reference_context
   # Build query from current row
-  query = f"{term_label or ''} {term_definition or ''}"
+  query = f"{elem_label or ''} {elem_definition or ''}"
+  if reference_mode == "vector":
+    try:
+      # Special handling for properties: provide two distinct contexts
+      # 1) Potential parent properties (search properties collection)
+      # 2) Related classes that may be useful in the definition (search classes collection)
+      et = (elem_type or "").strip().lower()
+      prop_lines = _vector_top_k(query, "property", ref_top_k, settings)
+      class_lines = _vector_top_k(query, "class", ref_top_k, settings)
+      lines = []
+      if et == "property":
+        if prop_lines:
+          lines.append("Parent or genus property candidates Y are:")
+          lines.extend(prop_lines)
+        if class_lines:
+          lines.append("Related class candidates for C or D are:")
+          lines.extend(class_lines)
+      else:
+        if class_lines:
+          lines.append("Parent or genus class candidates candidates Y are:")
+          lines.extend(class_lines)
+        if prop_lines:
+          lines.append("Property candidates that may be useful for describing the differentia Z are:")
+          lines.extend(prop_lines)
+    except Exception as e:
+      logger.warning("Vector search failed (%s); falling back to retrieve mode.", e)
+      reference_mode = "retrieve"
+      # fall through to retrieve
   if reference_mode == "fuzzy":
     # fuzzy mode: use RapidFuzz to select top-K relevant lines
     lines = fuzzy_top_k(ref_entries, ref_strings, get_scorer, ref_fuzzy_scorer, query, ref_top_k, ref_fuzzy_cutoff)
-  else:
+  elif reference_mode != "vector":
     # retrieve mode: pick top-K by simple overlap against query composed of label + definition
     scored = [
       (
@@ -154,3 +183,62 @@ def build_reference_context(settings: dict, ref_entries, full_reference_context,
   if len(context) > ref_max_chars:
     context = context[: ref_max_chars] + "\n…"
   return context
+
+
+def _get_embedder(settings: dict):
+  global _embedder_cache
+  if _embedder_cache is not None:
+    return _embedder_cache
+  try:
+    from sentence_transformers import SentenceTransformer
+  except Exception as e:
+    raise RuntimeError("sentence-transformers not installed") from e
+  model_name = settings.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
+  _embedder_cache = SentenceTransformer(model_name)
+  return _embedder_cache
+
+
+def _get_milvus_client(settings: dict):
+  global _milvus_client_cache
+  if _milvus_client_cache is not None:
+    return _milvus_client_cache
+  try:
+    from pymilvus import MilvusClient
+  except Exception as e:
+    raise RuntimeError("pymilvus not installed") from e
+  uri = settings.get("vector_db_uri")
+  _milvus_client_cache = MilvusClient(uri=uri)
+  return _milvus_client_cache
+
+
+def _vector_top_k(query: str, elem_type: str, top_k: int, settings: dict) -> List[str]:
+  embedder = _get_embedder(settings)
+  client = _get_milvus_client(settings)
+  q_vec = embedder.encode([query], normalize_embeddings=True)[0].tolist()
+  coll_class = settings.get("vector_collection_classes", "ref_classes")
+  coll_prop = settings.get("vector_collection_properties", "ref_properties")
+
+  def _search(coll_name: str):
+    if not client.has_collection(coll_name):
+      return []
+    client.load_collection(coll_name)
+    res = client.search(
+      collection_name=coll_name,
+      data=[q_vec],
+      limit=max(top_k, 0),
+      output_fields=["label", "definition"],
+      search_params={"metric_type": "COSINE"},
+    )
+    hits = res[0] if res else []
+    return [(h.get("distance", 0.0), f"- {h['entity']['label']}: {h['entity']['definition']}") for h in hits]
+
+  t = (elem_type or "").strip().lower()
+  if t == "class":
+    scored = _search(coll_class)
+  elif t == "property":
+    scored = _search(coll_prop)
+  else:
+    # Unknown: search both and combine
+    scored = (_search(coll_class) + _search(coll_prop))
+  scored.sort(key=lambda x: x[0], reverse=True)
+  return [s[1] for s in scored[: max(top_k, 0)]]

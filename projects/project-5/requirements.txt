@@ -14,3 +14,8 @@ langchain-ollama>=0.2.0
 # Retrieval helpers
 rapidfuzz>=3.7.0
 dotenv>=0.9.9
+
+# Vector search (Milvus Lite) and embeddings
+pymilvus>=2.4.4
+pymilvus[milvus_lite]
+sentence-transformers>=3.0.0
