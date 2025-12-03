@@ -3,8 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 import rdflib
+from rdflib.namespace import RDF, RDFS, OWL
 
-from logger_config import config
+from util.logger_config import config
 
 logger = logging.getLogger(__name__)
 config(logger)
@@ -14,9 +15,8 @@ DATA_ROOT = PROJECT_ROOT / "data"
 GENERATED_ROOT = PROJECT_ROOT / "generated"
 REPORTS_ROOT = PROJECT_ROOT / "reports"
 SCRIPTS_ROOT = PROJECT_ROOT / "scripts"
-SRC_ROOT = PROJECT_ROOT / "src"
-
-INPUT_FILE = SRC_ROOT / "InformationEntityOntology.ttl"
+ONTOLOGIES_ROOT = PROJECT_ROOT / "src"
+INPUT_FILE = ONTOLOGIES_ROOT / "InformationEntityOntology.ttl"
 OUTPUT_FILE = DATA_ROOT / "definitions.csv"
 
 
@@ -30,6 +30,7 @@ def extract_definitions(g):
     rows = []
     query = """
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     SELECT ?s ?label ?definition {
         ?s skos:definition ?definition .
         OPTIONAL { 
@@ -39,12 +40,32 @@ def extract_definitions(g):
     """
     rows = []
     for row in g.query(query):
-        rows.append([str(row[0]), str(row[1]), str(row[2])])
+        s = row[0]
+        label = row[1]
+        definition = row[2]
+
+        # Determine if the subject is a class or a property based on rdf:type
+        types = set(g.objects(s, RDF.type))
+        entity_type = "class"
+        if any(t in {OWL.Class, RDFS.Class} for t in types):
+            entity_type = "class"
+        elif any(
+            t in {
+                RDF.Property,
+                OWL.ObjectProperty,
+                OWL.DatatypeProperty,
+                OWL.AnnotationProperty,
+            }
+            for t in types
+        ):
+            entity_type = "property"
+
+        rows.append([str(s), str(label), str(definition), entity_type])
     return rows
 
 
 def rows_to_df(rows):
-    return pd.DataFrame(rows, columns=["iri", "label", "definition"])
+    return pd.DataFrame(rows, columns=["iri", "label", "definition", "type"])
 
 
 def write_df_to_csv(df, OUTPUT_FILE):

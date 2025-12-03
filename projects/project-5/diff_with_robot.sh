@@ -14,7 +14,7 @@ set -euo pipefail
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # project-5 root (this script lives under project-5/scripts)
-PROJECT_DIR="$(cd "${THIS_DIR}/.." && pwd)"
+PROJECT_DIR="$(cd "${THIS_DIR}" && pwd)"
 
 # Load environment overrides from project .env if present
 ENV_FILE="${PROJECT_DIR}/.env"

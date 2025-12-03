@@ -46,6 +46,34 @@ Each student will:
     The script should print a concise report summarizing: mean_cos, chosen τ, number of accepted axioms, LLM contribution rate, and consistency status.
   9. Submit the repository with all outputs so the main course repository. 
 
+## Ollama GPU selection (choose GPU 1)
+
+Ollama does not take a direct "--gpu" flag. Instead, you select the GPU(s) by
+setting environment variables before starting the Ollama server (ollama serve).
+This repo provides a helper script that pins Ollama to a specific device.
+
+- To start Ollama on GPU 1 (the second GPU):
+
+  - Foreground:
+    - `bash projects/project-5/scripts/start_ollama_gpu.sh --device 1`
+
+  - Background (logs written to projects/project-5/logs/ollama_serve.log):
+    - `bash projects/project-5/scripts/start_ollama_gpu.sh 1 --background`
+
+The script sets both CUDA_VISIBLE_DEVICES (NVIDIA) and HIP_VISIBLE_DEVICES (AMD).
+You can also preconfigure these in projects/project-5/.env:
+
+- `OLLAMA_CUDA_VISIBLE_DEVICES=1`
+- `OLLAMA_HIP_VISIBLE_DEVICES=1`
+
+Then simply run:
+
+- `bash projects/project-5/scripts/start_ollama_gpu.sh`
+
+Your Python scripts (e.g., preprocess_definitions_llm.py) will use whatever
+GPU the running Ollama server is bound to. Make sure you have pulled your model
+and that `ollama serve` is running before executing the enrichment steps.
+
 ## Grading Criteria
 
   1. mean_cos ≥ 0.70, ontology consistent, and at least several new axioms added automatically.
@@ -67,3 +95,73 @@ Each student will:
 - `scripts/train_mowl.py` — Trains ELEmbeddings on `src/train.ttl` and evaluates on `src/valid.ttl`.
 - `scripts/filter_candidates_hybrid.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
 - `scripts/run_all.py` — One-command driver that executes the entire pipeline end-to-end.
+
+## Prompt configuration (PROMPT_CONFIG_FILE)
+
+The enrichment script supports configurable prompts for classes and properties via a readable Markdown file (recommended) or a legacy INI file (backward compatible).
+
+- Default locations committed in this repo:
+  - Markdown: `projects/project-5/prompts/default_prompts.md` (recommended)
+  - INI: `projects/project-5/prompts/default_prompts.ini`
+
+- Environment variable to point to a custom file (relative to project-5 or absolute):
+  - `PROMPT_CONFIG_FILE=prompts/default_prompts.md`
+  - This is already set in `projects/project-5/.env`.
+
+- Auto-discovery (when `PROMPT_CONFIG_FILE` is not set), in order:
+  1. `projects/project-5/prompts/prompt.md`
+  2. `projects/project-5/prompts/prompt.ini`
+  3. `projects/project-5/prompts/default_prompts.md`
+  4. `projects/project-5/prompts/default_prompts.ini`
+  If none exists, the script falls back to built-in defaults.
+
+### Markdown structure (recommended)
+Available variables inside templates: `{label}`, `{definition}`, `{reference_context}`.
+
+Use the following headings (case-insensitive):
+
+```
+## Class
+
+### System
+You are a precise ontology editor and an expert in Basic Formal Ontology (BFO) and Common Core Ontologies (CCO). Improve CLASS definitions in a clear, concise, academic style that adheres to BFO principles. Use genus–differentia with the pattern: '"x" is a Y that Zs'.
+
+### User
+Below is the label for the ontology element X; improve its definition as explained:
+Label: {label}
+Definition: {definition}
+Reference BFO/CCO glossary entries are:
+ {reference_context} 
+Rules: single sentence; academic tone; expand abbreviations; return only the improved definition without quotes or commentary.
+
+## Property
+
+### System
+You are a precise ontology editor and an expert in Basic Formal Ontology (BFO) and Common Core Ontologies (CCO). Improve PROPERTY definitions in a clear, concise, academic style that adheres to BFO principles. Use the pattern: 'a X b' iff a is a Y that does Z.
+
+### User
+Below is the label for the ontology element X; improve its definition as explained:
+Label: {label}
+Definition: {definition}
+Reference BFO/CCO glossary entries are:
+ {reference_context} 
+Rules: single sentence; academic tone; expand abbreviations; return only the improved definition without quotes or commentary.
+```
+
+Notes:
+- Only the headings matter for parsing: `## Class` / `## Property` with `### System` and `### User` subsections under each. Content continues until the next `###` or `##` heading.
+- Missing sections fall back to built-in defaults.
+
+### INI structure (legacy, still supported)
+
+```
+[class]
+system = ... class-specific instructions ...
+user = Label: {label}\nDefinition: {definition}\nReference BFO/CCO glossary entries are:\n {reference_context}
+
+[property]
+system = ... property-specific instructions ...
+user = Label: {label}\nDefinition: {definition}\nReference BFO/CCO glossary entries are:\n {reference_context}
+```
+
+To customize, copy `prompts/default_prompts.md` to `prompts/prompt.md` and edit. Alternatively, set `PROMPT_CONFIG_FILE` to your own file path (Markdown or INI).

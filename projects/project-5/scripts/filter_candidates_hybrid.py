@@ -1,6 +1,6 @@
 from pathlib import Path
 import logging
-from logger_config import config
+from util.logger_config import config
 
 logger = logging.getLogger(__name__)
 config(logger)

@@ -2,7 +2,7 @@ from pathlib import Path
 import extract_definitions
 import preprocess_definitions_llm
 import logging
-from logger_config import config
+from util.logger_config import config
 
 logger = logging.getLogger(__name__)
 config(logger)
