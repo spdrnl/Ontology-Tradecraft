@@ -1,8 +1,10 @@
 from __future__ import annotations
-
+import mowl
+mowl.init_jvm("6g")
 import argparse
 import json
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -11,7 +13,9 @@ import torch
 from rdflib import Graph, RDFS
 from rdflib.term import URIRef
 
+import dotenv
 from util.logger_config import config
+from common.settings import build_settings
 
 logger = logging.getLogger(__name__)
 config(logger)
@@ -32,7 +36,7 @@ def _lazy_mowl_imports():  # noqa: D401
     return OtcPathDataset, OtcModel
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(settings: dict) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Filter candidate EL axioms using hybrid MOWL cosine + LLM plausibility")
     p.add_argument("--candidates", default=str(GENERATED_ROOT / "candidate_el.ttl"), help="Input TTL with candidate axioms (rdfs:subClassOf)")
     p.add_argument("--out", default=str(GENERATED_ROOT / "accepted_el.ttl"), help="Output TTL path for accepted axioms")
@@ -42,9 +46,10 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--limit", type=int, default=0, help="Optional max number of candidates to process (0 = all)")
     p.add_argument("--dry-run", action="store_true", help="Skip LLM calls; use cosine only for filtering")
         # LLM options (LangChain + Ollama backend)
-    p.add_argument("--ollama-host", default="http://localhost:11434", help="Ollama server base URL (used via LangChain)")
-    p.add_argument("--ollama-model", default="llama3:instruct", help="Ollama model name to use for plausibility scoring (via LangChain)")
-    p.add_argument("--temperature", type=float, default=0.0, help="LLM temperature (default 0.0)")
+    env_host = os.getenv("OLLAMA_HOST") or os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
+    p.add_argument("--ollama-host", default=env_host, help="Ollama server base URL (used via LangChain)")
+    p.add_argument("--ollama-model", default=str(settings.get("model_name", "llama3:instruct")), help="Ollama model name to use for plausibility scoring (via LangChain)")
+    p.add_argument("--temperature", type=float, default=float(settings.get("temperature", 0.0)), help="LLM temperature")
     p.add_argument("--timeout", type=float, default=60.0, help="Per-call timeout seconds for LLM requests (best-effort)")
     return p.parse_args()
 
@@ -123,6 +128,30 @@ def _init_model_for_embeddings(metrics: dict):
     ckpt = _find_checkpoint()
     model_filepath = ckpt.as_posix() if ckpt else (CHECKPOINTS_ROOT / "elembeddings.model").as_posix()
 
+    # If a checkpoint exists, try to infer the embedding dimension from it to avoid
+    # size-mismatch errors when loading weights through MOWL's get_embeddings()/load_best_model.
+    if ckpt and ckpt.exists():
+        try:
+            state = torch.load(ckpt.as_posix(), map_location="cpu")
+            # Expect keys like 'class_embed.weight' and 'rel_embed.weight'
+            if isinstance(state, dict):
+                if "class_embed.weight" in state:
+                    w = state["class_embed.weight"]
+                elif "module.class_embed.weight" in state:
+                    w = state["module.class_embed.weight"]
+                else:
+                    w = None
+                if w is not None and hasattr(w, "shape") and len(w.shape) == 2:
+                    inferred_dim = int(w.shape[1])
+                    if inferred_dim != dim:
+                        logger.info("Overriding embed_dim from metrics (%d) to checkpoint dim (%d)", dim, inferred_dim)
+                        dim = inferred_dim
+        except Exception as e:
+            logger.debug("Could not infer dim from checkpoint %s: %s", ckpt, e)
+
+    # Select device safely: prefer CUDA if available, otherwise CPU. Avoid forcing CUDA on systems without it.
+    safe_device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
     model = OtcModel(
         dataset,
         embed_dim=dim,
@@ -131,7 +160,7 @@ def _init_model_for_embeddings(metrics: dict):
         model_filepath=model_filepath,
         batch_size=int(metrics.get("batch", 1024)),
         reg_norm=reg_norm,
-        device='cuda:0'
+        device=safe_device
     )
 
     # Try loading checkpoint weights if a file exists
@@ -294,7 +323,11 @@ def _write_accepted(out_path: Path, pairs: Iterable[Tuple[str, str]]) -> int:
 
 
 def main():
-    args = _parse_args()
+    # Align with other programs: load .env and shared settings
+    dotenv.load_dotenv()
+    settings = build_settings(PROJECT_ROOT, DATA_ROOT)
+
+    args = _parse_args(settings)
     candidates_path = Path(args.candidates)
     out_path = Path(args.out)
     metrics_path = Path(args.metrics)
@@ -318,7 +351,13 @@ def main():
     cos_scores = _cosine_scores(model, pairs)
 
     defs = _load_definitions(DATA_ROOT / "definitions.csv")
-    llm_cfg = LLMConfig(host=args.ollama_host, model=args.ollama_model, temperature=args.temperature, timeout=args.timeout)
+    # Build LLM configuration from settings with CLI overrides
+    llm_cfg = LLMConfig(
+        host=args.ollama_host,
+        model=args.ollama_model,
+        temperature=args.temperature,
+        timeout=args.timeout,
+    )
     plaus_scores = _score_plausibility(pairs, llm_cfg, defs, dry_run=bool(args.dry_run))
 
     accepted: List[Tuple[str, str]] = []
