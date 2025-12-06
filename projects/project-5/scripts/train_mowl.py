@@ -291,6 +291,18 @@ def main():
     tau_candidates = [0.4, 0.45, 0.5, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80]
     tau, overall_mean = pick_threshold(sims, tau_candidates)
 
+    # Capture the model checkpoint filepath to expose it in metrics for downstream scripts
+    try:
+        best_model_path = getattr(model, "model_filepath", None)
+    except Exception:
+        best_model_path = None
+    best_model_filename = None
+    if isinstance(best_model_path, str):
+        try:
+            best_model_filename = Path(best_model_path).name
+        except Exception:
+            best_model_filename = None
+
     metrics = {
         "model": "ELEmbeddings",
         "epochs": args.epochs,
@@ -308,6 +320,8 @@ def main():
         "mean_cos": overall_mean,
         "selected_tau": tau,
         "tau_candidates": tau_candidates,
+        "best_model_path": best_model_path,
+        "best_model_filename": best_model_filename,
     }
     write_metrics(out_path, metrics)
 
