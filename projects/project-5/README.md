@@ -32,6 +32,8 @@ Each student will:
   2. Write `scripts/preprocess_definitions_llm.py` to normalize and enrich definitions with an LLM and output `data/definitions_enriched.csv`; this should ensure definitions are standardized in a canonical form (e.g., “X is a Y that Zs”) and that ambiguity is removed, abbreviations expanded, and terminology aligned to CCO style.
   3. Create `scripts/generate_candidates_llm.py` that takes enriched definitions and returns OWL 2 EL–compliant candidate axioms in `generated/candidate_el.ttl`.
   4. Split `src/cco-module.ttl` into `src/train.ttl` (≈ 80%) and `src/valid.ttl` (≈ 20%), preserving all class and property declarations.
+     - Use: `python3 projects/project-5/scripts/split_train_valid.py --input src/InformationEntityOntology.ttl --train src/train.ttl --valid src/valid.ttl --ratio 0.8 --seed 42`.
+     - The splitter keeps all owl:Class/ObjectProperty/DataProperty declarations in BOTH splits and partitions only simple named-class rdfs:subClassOf axioms; this matches MOWL PathDataset expectations for training/evaluation.
   5. Write `scripts/train_mowl.py` to train an ELEmbeddings model on `src/train.ttl`, evaluate on `src/valid.ttl`, and record results in `reports/mowl_metrics.json`; compute cosine similarity for held-out subclass–superclass pairs; choose the smallest threshold τ ∈ {0.60 – 0.80} achieving mean_cos ≥ 0.70.
   6. Implement `scripts/filter_candidates_hybrid.py` to score each (sub, super) pair by MOWL cosine similarity, query an LLM to rate semantic plausibility (0–1), then combine scores as a weighted average (e.g., 0.7 × cosine + 0.3 × LLM), returning a list of axioms meeting the threshold in `generated/accepted_el.ttl`.
   7. Merge `generated/accepted_el.ttl` with `src/cco-module.ttl` using ROBOT, reason with ELK, and save the final ontology as `src/module_augmented.ttl`.
@@ -93,6 +95,7 @@ and that `ollama serve` is running before executing the enrichment steps.
 - `scripts/preprocess_definitions_llm.py` — Normalizes/enriches definitions with an LLM.
 - `scripts/generate_candidates_llm.py` — Generates EL-compliant candidate axioms from enriched definitions.
 - `scripts/train_mowl.py` — Trains ELEmbeddings on `src/train.ttl` and evaluates on `src/valid.ttl`.
+- `scripts/split_train_valid.py` — Deterministically splits an ontology into train/valid for MOWL PathDataset.
 - `scripts/filter_candidates_hybrid.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
 - `scripts/run_all.py` — One-command driver that executes the entire pipeline end-to-end.
 

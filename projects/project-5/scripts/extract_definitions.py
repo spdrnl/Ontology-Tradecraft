@@ -60,6 +60,10 @@ def extract_definitions(g):
         ):
             entity_type = "property"
 
+        if entity_type == "class":
+            label = label.capitalize()
+        if entity_type == "property":
+            label = label.lower()
         rows.append([str(s), str(label), str(definition), entity_type])
     return rows
 

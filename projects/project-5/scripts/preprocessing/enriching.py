@@ -5,7 +5,8 @@ from typing import Any, List
 from preprocessing.fuzzy_matching import fuzzy_top_k, get_scorer, simple_score
 from preprocessing.io import format_messages_as_text, append_to_file
 from preprocessing.output_sanitizing import sanitize_llm_output, _strip_wrapping_quotes
-from preprocessing.post_processing import apply_label_casing, apply_property_snakecase
+from preprocessing.string_normalization import remove_snake_case, replace_x_and_y, apply_label_casing, \
+    apply_property_snakecase
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ def enrich(elem_iri: str, elem_label: str, elem_type: str, elem_definition: str,
                                     settings)
 
   vars = {
-    "label": elem_label or "",
-    "definition": elem_definition or "",
+    "label": f"'{remove_snake_case(elem_label)}'" or "",
+    "definition": replace_x_and_y(remove_snake_case(elem_definition)) or "",
     "reference_context": ref_ctx,
   }
 
@@ -230,7 +231,7 @@ def _vector_top_k(query: str, elem_type: str, top_k: int, settings: dict) -> Lis
       search_params={"metric_type": "COSINE"},
     )
     hits = res[0] if res else []
-    return [(h.get("distance", 0.0), f"- {h['entity']['label']}: {h['entity']['definition']}") for h in hits]
+    return [(h.get("distance", 0.0), f"- '{h['entity']['label']}': {h['entity']['definition']}") for h in hits]
 
   t = (elem_type or "").strip().lower()
   if t == "class":
@@ -242,3 +243,16 @@ def _vector_top_k(query: str, elem_type: str, top_k: int, settings: dict) -> Lis
     scored = (_search(coll_class) + _search(coll_prop))
   scored.sort(key=lambda x: x[0], reverse=True)
   return [s[1] for s in scored[: max(top_k, 0)]]
+
+
+def normalize_prefix(improved_definition: str,
+                     type_name: str,
+                     label: str) -> str:
+    improved_definition = improved_definition.split("iff")[1].strip()
+    if type_name == "property":
+        improved_definition = f"individual i '{remove_snake_case(label)}' individual j iff {improved_definition}"
+    elif type_name == "class":
+        improved_definition = f"individual i is a '{remove_snake_case(label)}' iff {improved_definition}"
+    else:
+        logger.warning(f"Unknown element type: {type_name}")
+    return improved_definition

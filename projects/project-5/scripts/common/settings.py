@@ -27,14 +27,18 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
   enforce_label_casing = os.getenv("ENFORCE_LABEL_CASING", "false").lower() in {"1", "true", "yes", "on"}
   echo_prompts = os.getenv("ECHO_PROMPTS", "false").lower() in {"1", "true", "yes", "on"}
   echo_prompts_file = os.getenv("ECHO_PROMPTS_FILE", "").strip()
-  prompt_cfg_file = Path(os.getenv("DEFINITIONS_PROMPT_CONFIG_FILE", "").strip())
+  prompt_cfg_file = Path(os.getenv("DEFINITIONS_PROMPT_CONFIG_FILE", "prompts/preprocessing_definitions_prompts.md").strip())
   model_name = os.getenv("OLLAMA_MODEL", "llama3.1")
   temperature = float(os.getenv("OLLAMA_TEMPERATURE", "0.2"))
+  candidates_prompt_cfg_file = Path(os.getenv("CANDIDATES_PROMPT_CONFIG_FILE", "prompts/generate_candidates_prompts.md").strip())
 
   # Vector DB / Embeddings (optional; used when REFERENCE_MODE=vector)
   vector_db_uri = os.getenv("VECTOR_DB_URI", str(DATA_ROOT / "milvus.db"))
   vector_collection_classes = os.getenv("VECTOR_COLLECTION_CLASSES", "ref_classes")
   vector_collection_properties = os.getenv("VECTOR_COLLECTION_PROPERTIES", "ref_properties")
+  # Qwen/Qwen3-Embedding-8B
+  # sentence-transformers/all-MiniLM-L6-v2
+  # nvidia/llama-embed-nemotron-8b
   embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 
   settings = {
@@ -52,6 +56,7 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
     "echo_prompts": echo_prompts,
     "echo_prompts_file": echo_prompts_file,
     "prompt_cfg_file": prompt_cfg_file,
+    "candidates_prompt_cfg_file": candidates_prompt_cfg_file,
     "model_name": model_name,
     "temperature": temperature,
     # Vector search

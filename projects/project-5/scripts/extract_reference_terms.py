@@ -128,7 +128,7 @@ def main():
     # Merge and select columns
     df = pd.concat([bfo_rows, cco_rows])
     # Keep label/definition for downstream scripts, and include new 'type' column
-    df = df[["label", "definition", "type"]]
+    df = df[["iri", "label", "definition", "type"]]
 
     logger.info("Writing to CSV...")
     write_df_to_csv(df, OUTPUT_FILE)
