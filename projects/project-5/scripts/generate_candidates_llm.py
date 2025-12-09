@@ -1,151 +1,237 @@
+import argparse
+import io
+import json
 import logging
+import os
+import tempfile
 from pathlib import Path
-from typing import List, Any
+from typing import List
 
-import dotenv
-from langchain_ollama import ChatOllama
+import nltk
+import pandas as pd
+import requests
+from nltk.corpus import stopwords
+from pydantic import BaseModel
+from rdflib import URIRef
 
-from generate.io import _load_label_to_iri_map
-from generate.post_processing import _extract_subclassof_line
-from preprocessing.enriching import build_reference_context
-from preprocessing.io import read_csv, write_df_to_csv, append_to_file, read_reference_entries
+from rdflib import Graph
+
+from common.json_extraction import extract_json
+from common.ontology_utils import get_turtle_snippet_by_uri_ref
+from common.robot import detect_robot, build_elk_robot_command, run
 from common.settings import build_settings
-from common.prompt_loading import load_markdown_prompt_templates, build_prompts, _inject_iris_into_context
+from common.string_normalization import collect_labels, filter_labels, collect_words, filter_stopwords
+from common.vectorization import vector_top_k
 from util.logger_config import config
 
-import pandas as pd
+PROJECT_ROOT = Path(__file__).parent.parent
+ROBOT_DIR = PROJECT_ROOT / "robot"
+DATA_ROOT = PROJECT_ROOT / "data"
+path = PROJECT_ROOT / Path("prompts/generate_candidates_prompts.md")
 
 logger = logging.getLogger(__name__)
 config(logger)
 
-dotenv.load_dotenv()
+nltk.download('stopwords')
 
-PROJECT_ROOT = Path(__file__).parent.parent
-DATA_ROOT = PROJECT_ROOT / "data"
-GENERATED_AXIOMS = DATA_ROOT / "candidate_parents.csv"
+prefixes = """
+@prefix cco: <https://www.commoncoreontologies.org/> .
+@prefix obo: <http://purl.obolibrary.org/obo/> .
+@prefix bfo: <http://purl.obolibrary.org/obo/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+""".strip()
 
-# Goals:
-# - Most logical structure is still implicit
-# - Generate OWL 2 EL–compliant candidate axioms
-# - Avoid duplication?
+class LlmResponse(BaseModel):
+    candidate_axioms: List[str]
+    reasoning: str
 
-def _select_prompt_and_chain(elem_type: str, prompts, chains):
-    t = (elem_type or "").strip().lower()
-    key = t if t in {"class", "property"} else "class"
-    return prompts.get(key), chains.get(key)
+def _load_entries(csv_path: Path) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
 
+    # Normalize expected columns
+    for col in ("iri", "label", "definition", "type"):
+        if col not in df.columns:
+            df[col] = ""
+
+    # Clean
+    df["label"] = df["label"].astype(str).str.strip()
+    df["definition"] = df["definition"].astype(str).str.strip()
+    df["type"] = df["type"].astype(str).str.strip().str.lower().replace({"": "unknown"})
+    df["iri"] = df["iri"].astype(str).str.strip()
+
+    # Filter out empty labels/definitions
+    df = df[(df["label"] != "") & (df["definition"] != "")]
+    return df
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description=(
+            "Generate candidate axioms for IEO using Ollama."
+        )
+    )
+    p.add_argument(
+        "--robot",
+        default=None,
+        help="Path to robot executable or robot.jar (if not provided, auto-detect)",
+    )
+    p.add_argument(
+        "--max-mem",
+        default=os.getenv("ROBOT_JAVA_MAX_MEM", "6g"),
+        help="Max Java heap for ROBOT when using robot.jar (default: 6g)",
+    )
+    return p.parse_args()
 
 def main():
-    logger.info("===================================================================")
-    logger.info("Generating parent candidates (LLM via LangChain + Ollama)")
-    logger.info("===================================================================")
 
-    # Load settings and inputs
+    args = parse_args()
+
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
-    enriched_path = settings["output_file"]  # data/definitions_enriched.csv
-    logger.info("Reading enriched definitions from: %s", enriched_path)
-    df = read_csv(enriched_path)
 
-    # LLM
-    logger.info("Initializing LLM with model: %s", settings["model_name"])
-    llm = ChatOllama(model=settings["model_name"], temperature=settings["temperature"])
+    stop_words = set(stopwords.words('english'))
 
-    # Load prompt config file for candidate generation (separate class/property prompts)
-    cand_cfg = settings.get("candidates_prompt_cfg_file")
-    logger.info("Loading candidate prompt templates from: %s", cand_cfg)
-    prompt_texts = load_markdown_prompt_templates(cand_cfg)
-    prompts, chains = build_prompts(llm, prompt_texts)
+    # Get BFO and CCO reference terms
+    csv_path: Path = settings["bfo_cco_terms"]
+    if not csv_path.exists():
+        logger.error("Reference terms CSV not found: %s", csv_path)
+        return
 
-    # Reference entries and label→IRI map
-    label_to_iri = _load_label_to_iri_map(settings["bfo_cco_terms"])
+    reference_terms_df = _load_entries(csv_path)
+    if reference_terms_df.empty:
+        logger.warning("No entries to index from %s", csv_path)
+        return
 
-    # Load BFO/CCO reference entries
-    ref_entries = read_reference_entries(settings)
-    ref_strings: List[str] = [f"{e['label']} — {e['definition']}" for e in ref_entries]
+    # BFO and CCO reference ontologies
+    ttl_path: Path = settings["reference_ontology"]
+    if not ttl_path.exists():
+        logger.error("Reference ontology not found: %s", ttl_path)
+        return
 
-    # Build outputs
-    DATA_ROOT.mkdir(parents=True, exist_ok=True)
-    generated = 0
-    df["choice"] = "None"
-    for iteration in range(10):
-        done = True
-        out_rows = []
-        logger.info("Building and querying reference context per row...")
-        for _, r in df.iterrows():
-            elem_iri = str(r.get("iri", "")).strip()
-            elem_label = str(r.get("label", "")).strip()
-            elem_type = str(r.get("type", "")).strip().lower() or "unknown"
-            elem_def = str(r.get("definition", "")).strip()
-            choice = str(r.get("choice", "")).strip()
+    reference_ontology = Graph()
+    reference_ontology.parse(ttl_path.as_posix(), format='turtle')
+    if len(reference_ontology.all_nodes()) == 0:
+        logger.warning("No entries in reference ontology %s", ttl_path)
+        return
 
-            if r["choice"] == "None":
-                # Build base reference context using existing retrieval logic
-                ref_ctx = build_reference_context(elem_label, elem_def, elem_type, ref_entries, [], settings)
+    # Create mapping from class and property labels to IRIs
+    labels_to_iri = {row['label']: {"iri": row["iri"], "type": row["type"]} for _, row in reference_terms_df.iterrows()}
 
-                    # Inject IRIs per option using label→IRI map
-                ref_ctx_with_iris = _inject_iris_into_context(ref_ctx, label_to_iri, elem_label)
+    # Gather information about target class
+    target_definition = """
+    x is an 'Algorithm' if x is a Directive Information Content Entity that 'prescribes' some 'process' and contains a finite sequence of unambiguous instructions in order to achieve some Objective.
+    """.strip()
+    target_uri_ref = "https://www.commoncoreontologies.org/ont00000653"
+    owl_definition = get_turtle_snippet_by_uri_ref(URIRef(target_uri_ref), "class",
+                                                   PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl")
 
-                vars = {
-                    "label": elem_label,
-                    "definition": elem_def,
-                    "reference_context": ref_ctx_with_iris,
-                }
+    # Collect labels and words
+    work_definition = target_definition
+    candidate_labels = collect_labels(work_definition, reference_terms_df["label"].tolist())
+    work_definition = filter_labels(work_definition, candidate_labels)
+    other_words = collect_words(work_definition)
+    other_words = filter_stopwords(other_words, stop_words)
 
-                prompt_echo(chains, elem_iri, elem_label, elem_type, prompts, settings, vars)
+    # Create mapping candidates
+    property_candidates = []
+    class_candidates = []
 
-                # Invoke LLM
-                try:
-                    _, chain_obj = _select_prompt_and_chain(elem_type, prompts, chains)
-                    resp = chain_obj.invoke(vars)
-                    raw = (getattr(resp, "content", "") or "").strip()
-                except Exception as e:
-                    logger.warning("LLM invocation failed for %s: %s", elem_label, e)
-                    raw = ""
+    # Collect directly recognized class and property labels
+    labels = collect_labels(target_definition, reference_terms_df["label"].tolist())
+    for label in labels:
+        if label in labels_to_iri:
+            if labels_to_iri[label]["type"] == "class":
+                class_candidates.append((label, labels_to_iri[label]["iri"]))
+            elif labels_to_iri[label]["type"] == "property":
+                property_candidates.append((label, labels_to_iri[label]["iri"]))
 
-                choice = _extract_subclassof_line(raw)
-                if choice == "None":
-                    done = False
-                    print(done, generated, elem_label, f"choice: [{choice}]", f"raw:[{raw}]")
-                else:
-                    generated += 1
-                    print(done, generated, elem_label, f"choice: [{choice}]", f"raw:[{raw}]")
+    # Do a vector search for other candidates
+    property_working_set = []
+    class_working_set = []
 
-            out_rows.append({
-                "iri": elem_iri,
-                "label": elem_label,
-                "type": elem_type,
-                "choice": choice,
-                "raw": raw,
-            })
-        out_df = pd.DataFrame(out_rows)
-        df = out_df
-        if done:
-            break
+    ref_top_k = 15  # settings.get("ref_top_k")
 
-    # Write CSV output
+    for word in other_words:
+        property_vector_suggestions = vector_top_k(word, "property", ref_top_k, settings)
+        for suggestion in property_vector_suggestions:
+            property_working_set.append(suggestion)
 
-    logger.info("Writing candidate parents to: %s", GENERATED_AXIOMS)
-    write_df_to_csv(df, GENERATED_AXIOMS)
+        class_vector_suggestions = vector_top_k(word, "class", ref_top_k, settings)
+        for suggestion in class_vector_suggestions:
+            class_working_set.append(suggestion)
 
-    logger.info("Done generating candidates.")
+    property_working_set.sort(key=lambda x: x["distance"], reverse=True)
+    property_working_set = property_working_set[:ref_top_k]
 
+    class_working_set.sort(key=lambda x: x["distance"], reverse=True)
+    class_working_set = class_working_set[:ref_top_k]
 
-def prompt_echo(chains: dict[Any, Any], elem_iri: str, elem_label: str, elem_type: str, prompts: dict[Any, Any],
-                settings: dict, vars: dict[str, str]):
-    # Echo prompt if enabled
-    if settings.get("echo_prompts", False):
-        try:
-            prompt_tmpl, _ = _select_prompt_and_chain(elem_type, prompts, chains)
-            msgs = prompt_tmpl.format_messages(**vars)
-            rendered = "\n\n".join(
-                f"[{getattr(m, 'type', getattr(m, 'role', ''))}]\n{getattr(m, 'content', '')}" for m in msgs)
-            header = f"\n==== Candidate Parent Prompt for IRI: {elem_iri} | label: {elem_label} ===="
-            out_text = f"{header}\n{rendered}\n==== End Prompt ====\n"
-            logger.info(out_text)
-            if settings.get("echo_prompts_file"):
-                append_to_file(settings.get("echo_prompts_file"), out_text)
-        except Exception as e:
-            logger.warning("Failed to echo prompt for %s: %s", elem_label, e)
+    for suggestion in property_working_set:
+        property_candidates.append((suggestion["label"], suggestion["iri"]))
+
+    for suggestion in class_working_set:
+        class_candidates.append((suggestion["label"], suggestion["iri"]))
+
+    property_candidates = property_candidates[:ref_top_k]
+    class_candidates = class_candidates[:ref_top_k]
+
+    # Create mapping sections
+    properties_section = ""
+    for candidate in set(property_candidates):
+        properties_section += f"{candidate[0]}, {candidate[1]}\n"
+
+    classes_section = ""
+    for candidate in set(class_candidates):
+        classes_section += f"{candidate[0]}, {candidate[1]}\n"
+
+    # Read and prepare the prompt
+    prompt = path.read_text()
+    query = (prompt
+             .replace("{target_definition}", target_definition)
+             .replace("{target_uri_ref}", target_uri_ref)
+             .replace("{owl_definition}", owl_definition)
+             .replace("{properties_section}", properties_section)
+             .replace("{classes_section}", classes_section)
+             )
+
+    print(query)
+
+    url = "http://localhost:11434/api/generate"
+
+    data = {
+        "model": "gemma3n",
+        "prompt": query,
+        "stream": False
+    }
+
+    response = requests.post(url, json=data)
+    print(response.text)
+    raw_reponse = json.loads(response.text)
+    axiom_response = extract_json(raw_reponse['response'])
+    all_axioms = Graph()
+    if "candidate_axioms" in axiom_response:
+        for axiom in axiom_response['candidate_axioms']:
+            turtle = prefixes + "\n\n" +axiom
+            print(turtle)
+            axiom_graph = Graph()
+            axiom_graph.parse(io.StringIO(turtle), format="turtle")
+            test_graph = all_axioms + axiom_graph
+            robot_cmd = detect_robot(args.robot, ROBOT_DIR)
+            with tempfile.NamedTemporaryFile(suffix=".ttl") as in_path:
+                with tempfile.NamedTemporaryFile(suffix=".ttl") as out_path:
+                    test_graph.serialize(format="turtle", destination=in_path.name)
+                    cmd = build_elk_robot_command(Path(in_path.name), Path(out_path.name), robot_cmd, args.max_mem)
+                    if run(cmd) != 0:
+                        logger.info("Axiom failed ELK reasoner: %s")
+                        logger.info("Axiom: %s", axiom)
+                    else:
+                        all_axioms += axiom_graph
+    if "reasoning" in axiom_response:
+        print(axiom_response['reasoning'])
+    all_axioms.serialize(format="turtle", destination=PROJECT_ROOT / "generated"/ "output.ttl")
 
 
 if __name__ == "__main__":
