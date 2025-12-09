@@ -40,7 +40,7 @@ def detect_robot(robot_arg: str, robot_dir: Path) -> list[str]:
     )
 
 
-def run(cmd: list[str]) -> None:
+def run(cmd: list[str]) -> int:
     logger.info("Running: %s", " ".join(cmd))
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if proc.returncode != 0:
@@ -52,3 +52,39 @@ def run(cmd: list[str]) -> None:
         raise RuntimeError(f"ROBOT failed with exit code {proc.returncode}")
     if proc.stdout:
         logger.debug(proc.stdout)
+    return proc.returncode
+
+
+def build_elk_robot_command(
+    in_ttl: Path, out_ttl: Path, robot_cmd: list[str], max_mem: str
+) -> list[str]:
+    """Construct the ROBOT command to run ELK reasoning on a single input TTL and save result."""
+    # We support two invocation modes:
+    # - If robot_cmd[0] endswith .jar, we call via java -Xmx{max_mem} -jar robot.jar ...
+    # - Else, we call the executable directly
+    if robot_cmd and robot_cmd[0].endswith(".jar"):
+        cmd = [
+            "java",
+            f"-Xmx{max_mem}",
+            "-jar",
+            robot_cmd[0],
+            "reason",
+            "--reasoner",
+            "ELK",
+            "--input",
+            in_ttl.as_posix(),
+            "--output",
+            out_ttl.as_posix(),
+        ]
+    else:
+        cmd = [
+            robot_cmd[0],
+            "reason",
+            "--reasoner",
+            "ELK",
+            "--input",
+            in_ttl.as_posix(),
+            "--output",
+            out_ttl.as_posix(),
+        ]
+    return cmd

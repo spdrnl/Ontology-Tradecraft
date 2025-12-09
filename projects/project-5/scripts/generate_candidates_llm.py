@@ -24,6 +24,10 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
 GENERATED_AXIOMS = DATA_ROOT / "candidate_parents.csv"
 
+# Goals:
+# - Most logical structure is still implicit
+# - Generate OWL 2 EL–compliant candidate axioms
+# - Avoid duplication?
 
 def _select_prompt_and_chain(elem_type: str, prompts, chains):
     t = (elem_type or "").strip().lower()

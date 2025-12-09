@@ -20,13 +20,14 @@ DATA_ROOT = PROJECT_ROOT / "data"
 def _load_entries(csv_path: Path) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     # Normalize expected columns
-    for col in ("label", "definition", "type"):
+    for col in ("iri", "label", "definition", "type"):
         if col not in df.columns:
             df[col] = ""
     # Clean
     df["label"] = df["label"].astype(str).str.strip()
     df["definition"] = df["definition"].astype(str).str.strip()
     df["type"] = df["type"].astype(str).str.strip().str.lower().replace({"": "unknown"})
+    df["iri"] = df["iri"].astype(str).str.strip()
     # Filter out empty labels/definitions
     df = df[(df["label"] != "") & (df["definition"] != "")]
     return df
@@ -57,7 +58,8 @@ def _ensure_collection(client, name: str, dim: int):
         description="Reference terms embeddings",
         enable_dynamic_field=False,
     )
-    schema.add_field("id", DataType.INT64, is_primary=True, auto_id=True)
+    schema.add_field("id", DataType.INT64, is_primary=True)
+    schema.add_field("iri", DataType.VARCHAR, max_length=512)
     schema.add_field("label", DataType.VARCHAR, max_length=512)
     schema.add_field("definition", DataType.VARCHAR, max_length=8192)
     schema.add_field("vector", DataType.FLOAT_VECTOR, dim=dim)
@@ -120,13 +122,14 @@ def main():
             logger.info("No %s entries to index.", type_name)
             client.load_collection(coll_name)
             continue
+        iris = sub["iri"].tolist()
         labels = sub["label"].tolist()
         defs = sub["definition"].tolist()
         vectors = _embed_texts(embedder, labels, defs)
         # Convert to row-wise records for robust MilvusClient.insert consumption
         rows = [
-            {"label": l, "definition": d, "vector": v}
-            for l, d, v in zip(labels, defs, vectors)
+            {"iri": i, "label": l, "definition": d, "vector": v}
+            for i, l, d, v in zip(iris, labels, defs, vectors)
         ]
         logger.info("Inserting %d %s vectors into '%s'", len(labels), type_name, coll_name)
         client.insert(collection_name=coll_name, data=rows)

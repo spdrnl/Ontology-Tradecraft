@@ -18,7 +18,7 @@ SCRIPTS_ROOT = PROJECT_ROOT / "scripts"
 ONTOLOGIES_ROOT = PROJECT_ROOT / "src"
 
 BFO_CORE_FILE = ONTOLOGIES_ROOT / "bfo-core.ttl"
-CCO_MERGED_FILE = ONTOLOGIES_ROOT / "CommonCoreOntologiesMerged.ttl"
+CONSOLIDATED_CCO_MERGED_FILE = ONTOLOGIES_ROOT / "ConsolidatedCCO.ttl"
 OUTPUT_FILE = DATA_ROOT / "bfo_cco_terms.csv"
 
 
@@ -120,7 +120,7 @@ def main():
     logger.info("Extracting labels and definitions...")
     bfo_rows = rows_to_df(extract_definitions(g))
     logger.info(f"Found {len(bfo_rows)} definitions.")
-    g = read_ttl(CCO_MERGED_FILE)
+    g = read_ttl(CONSOLIDATED_CCO_MERGED_FILE)
     logger.info("Extracting labels and definitions...")
     cco_rows = rows_to_df(extract_definitions(g))
     logger.info(f"Found {len(cco_rows)} definitions.")

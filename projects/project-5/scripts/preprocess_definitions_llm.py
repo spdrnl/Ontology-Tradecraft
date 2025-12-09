@@ -9,8 +9,7 @@ from common.prompt_loading import load_markdown_prompt_templates, build_prompts
 from common.settings import build_settings
 from preprocessing.enriching import enrich, normalize_prefix
 from preprocessing.io import read_csv, write_df_to_csv, read_reference_entries
-from preprocessing.string_normalization import remove_snake_case, apply_label_casing, apply_single_quotes, contains, \
-    replace_x_and_y
+from common.string_normalization import remove_snake_case, apply_label_casing, apply_single_quotes
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -21,6 +20,11 @@ dotenv.load_dotenv()
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
 
+# Goals:
+# - X is a Y that Z's
+# - Ambiguity is removed
+# - Abbreviations expanded
+# - Terminology aligned to CCO style
 
 def main():
     logger.info("===================================================================")
@@ -47,6 +51,11 @@ def main():
     ref_entries = read_reference_entries(settings)
     ref_labels = [element['label'] for element in ref_entries]
 
+    # Load phrase differences
+    phrase_diffs = pd.read_csv("data/phrase_differences.csv")
+    phrase_diffs = phrase_diffs[["label", "difference"]]
+    phrase_diffs_dict = phrase_diffs.set_index("label").to_dict()["difference"]
+
     # Perform the enrichment
     logger.info("Enriching definitions...")
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
@@ -65,23 +74,15 @@ def main():
             if status == "OK":
                 improved_definition = r['definition']
             else:
-                definition = remove_snake_case(definition)
-                definition = apply_label_casing(definition, ref_labels)
-                definition = apply_single_quotes(definition, ref_labels)
-                definition = replace_x_and_y(definition)
-                if not contains(definition, label):
-                    if type_name == "class":
-                        definition = f"individual i is a '{label}' iff individual i is a {definition}"
-                    if type_name == "property":
-                        definition = f"individual i '{label}' individual j iff {label} is a {definition}"
-
                 improved_definition = enrich(iri,
                                              label,
                                              type_name,
                                              definition,
                                              chains,
                                              prompts,
+                                             phrase_diffs_dict,
                                              ref_entries,
+                                             ref_labels,
                                              settings)
 
                 improved_definition = improved_definition.replace("if and only if", "iff")

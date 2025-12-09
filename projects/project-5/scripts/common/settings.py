@@ -28,6 +28,7 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
   echo_prompts = os.getenv("ECHO_PROMPTS", "false").lower() in {"1", "true", "yes", "on"}
   echo_prompts_file = os.getenv("ECHO_PROMPTS_FILE", "").strip()
   prompt_cfg_file = Path(os.getenv("DEFINITIONS_PROMPT_CONFIG_FILE", "prompts/preprocessing_definitions_prompts.md").strip())
+  reference_ontology = Path(os.getenv("REFERENCE_ONTOLOGY", PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl"))
   model_name = os.getenv("OLLAMA_MODEL", "llama3.1")
   temperature = float(os.getenv("OLLAMA_TEMPERATURE", "0.2"))
   candidates_prompt_cfg_file = Path(os.getenv("CANDIDATES_PROMPT_CONFIG_FILE", "prompts/generate_candidates_prompts.md").strip())
@@ -59,6 +60,7 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
     "candidates_prompt_cfg_file": candidates_prompt_cfg_file,
     "model_name": model_name,
     "temperature": temperature,
+    "reference_ontology": reference_ontology,
     # Vector search
     "vector_db_uri": vector_db_uri,
     "vector_collection_classes": vector_collection_classes,

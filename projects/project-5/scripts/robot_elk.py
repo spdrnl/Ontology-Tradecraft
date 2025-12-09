@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-from common.robot import detect_robot, run
+from common.robot import detect_robot, run, build_elk_robot_command
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -48,41 +48,6 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def build_robot_command(
-    in_ttl: Path, out_ttl: Path, robot_cmd: list[str], max_mem: str
-) -> list[str]:
-    """Construct the ROBOT command to run ELK reasoning on a single input TTL and save result."""
-    # We support two invocation modes:
-    # - If robot_cmd[0] endswith .jar, we call via java -Xmx{max_mem} -jar robot.jar ...
-    # - Else, we call the executable directly
-    if robot_cmd and robot_cmd[0].endswith(".jar"):
-        cmd = [
-            "java",
-            f"-Xmx{max_mem}",
-            "-jar",
-            robot_cmd[0],
-            "reason",
-            "--reasoner",
-            "ELK",
-            "--input",
-            in_ttl.as_posix(),
-            "--output",
-            out_ttl.as_posix(),
-        ]
-    else:
-        cmd = [
-            robot_cmd[0],
-            "reason",
-            "--reasoner",
-            "ELK",
-            "--input",
-            in_ttl.as_posix(),
-            "--output",
-            out_ttl.as_posix(),
-        ]
-    return cmd
-
-
 def main() -> None:
     args = parse_args()
     in_path = Path(args.input)
@@ -93,7 +58,7 @@ def main() -> None:
         raise FileNotFoundError(f"Input ontology not found: {in_path}")
 
     robot_cmd = detect_robot(args.robot, ROBOT_DIR)
-    cmd = build_robot_command(in_path, out, robot_cmd, args.max_mem)
+    cmd = build_elk_robot_command(in_path, out, robot_cmd, args.max_mem)
     run(cmd)
 
     if not out.exists() or out.stat().st_size == 0:
