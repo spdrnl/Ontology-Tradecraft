@@ -12,12 +12,12 @@ import pandas as pd
 import requests
 from nltk.corpus import stopwords
 from pydantic import BaseModel
-from rdflib import URIRef
-
 from rdflib import Graph
+from rdflib import URIRef
 
 from common.json_extraction import extract_json
 from common.ontology_utils import get_turtle_snippet_by_uri_ref
+from common.prompt_loading import load_markdown_prompt_templates
 from common.robot import detect_robot, build_elk_robot_command, run
 from common.settings import build_settings
 from common.string_normalization import collect_labels, filter_labels, collect_words, filter_stopwords
@@ -46,9 +46,11 @@ prefixes = """
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 """.strip()
 
+
 class LlmResponse(BaseModel):
     candidate_axioms: List[str]
     reasoning: str
+
 
 def _load_entries(csv_path: Path) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
@@ -68,6 +70,7 @@ def _load_entries(csv_path: Path) -> pd.DataFrame:
     df = df[(df["label"] != "") & (df["definition"] != "")]
     return df
 
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
@@ -86,8 +89,8 @@ def parse_args() -> argparse.Namespace:
     )
     return p.parse_args()
 
-def main():
 
+def main():
     args = parse_args()
 
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
@@ -105,6 +108,23 @@ def main():
         logger.warning("No entries to index from %s", csv_path)
         return
 
+    # Create mapping from class and property labels to IRIs
+    labels_to_iri = {row['label']: {"iri": row["iri"], "type": row["type"]} for _, row in reference_terms_df.iterrows()}
+
+    # Phrase difference
+    phrase_differences_path: Path = settings["phrase_differences"]
+    if not csv_path.exists():
+        logger.error("Phrase difference CSV not found: %s", phrase_differences_path)
+        return
+
+    phrase_differences_df = pd.read_csv(phrase_differences_path, header=0)
+    if reference_terms_df.empty:
+        logger.warning("No entries to index from %s", phrase_differences_path)
+        return
+
+    # Create mapping from class and property labels to IRIs
+    labels_to_phrase_difference = {row['label']: row["difference"] for _, row in phrase_differences_df.iterrows()}
+
     # BFO and CCO reference ontologies
     ttl_path: Path = settings["reference_ontology"]
     if not ttl_path.exists():
@@ -117,27 +137,32 @@ def main():
         logger.warning("No entries in reference ontology %s", ttl_path)
         return
 
-    # Create mapping from class and property labels to IRIs
-    labels_to_iri = {row['label']: {"iri": row["iri"], "type": row["type"]} for _, row in reference_terms_df.iterrows()}
+    # Load prompt config file
+    logger.info(f"Loading prompt templates from: {settings['prompt_cfg_file']}")
+    prompt_texts = load_markdown_prompt_templates(path)
 
     # Gather information about target class
     target_definition = """
     x is an 'Algorithm' if x is a Directive Information Content Entity that 'prescribes' some 'process' and contains a finite sequence of unambiguous instructions in order to achieve some Objective.
     """.strip()
     target_uri_ref = "https://www.commoncoreontologies.org/ont00000653"
-    owl_definition = get_turtle_snippet_by_uri_ref(URIRef(target_uri_ref), "class",
-                                                   PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl")
+    target_type = "class"
+    target_label = "Algorithm"
+    target_owl_definition = get_turtle_snippet_by_uri_ref(URIRef(target_uri_ref), target_type,
+                                                          PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl")
+
+    # Create mapping candidates
+    ref_top_k = 25  # settings.get("ref_top_k")
+    property_candidates = []
+    class_candidates = []
 
     # Collect labels and words
     work_definition = target_definition
     candidate_labels = collect_labels(work_definition, reference_terms_df["label"].tolist())
     work_definition = filter_labels(work_definition, candidate_labels)
+    work_definition = work_definition + labels_to_phrase_difference[target_label]
     other_words = collect_words(work_definition)
     other_words = filter_stopwords(other_words, stop_words)
-
-    # Create mapping candidates
-    property_candidates = []
-    class_candidates = []
 
     # Collect directly recognized class and property labels
     labels = collect_labels(target_definition, reference_terms_df["label"].tolist())
@@ -151,8 +176,6 @@ def main():
     # Do a vector search for other candidates
     property_working_set = []
     class_working_set = []
-
-    ref_top_k = 15  # settings.get("ref_top_k")
 
     for word in other_words:
         property_vector_suggestions = vector_top_k(word, "property", ref_top_k, settings)
@@ -181,18 +204,19 @@ def main():
     # Create mapping sections
     properties_section = ""
     for candidate in set(property_candidates):
-        properties_section += f"{candidate[0]}, {candidate[1]}\n"
+        properties_section += f"'{candidate[0]}', {candidate[1]}\n"
 
     classes_section = ""
     for candidate in set(class_candidates):
-        classes_section += f"{candidate[0]}, {candidate[1]}\n"
+        classes_section += f"'{candidate[0]}', {candidate[1]}\n"
 
     # Read and prepare the prompt
-    prompt = path.read_text()
+    prompt = f"{prompt_texts[target_type]["system"]}/n{prompt_texts[target_type]['user']}"
+
     query = (prompt
              .replace("{target_definition}", target_definition)
              .replace("{target_uri_ref}", target_uri_ref)
-             .replace("{owl_definition}", owl_definition)
+             .replace("{owl_definition}", target_owl_definition)
              .replace("{properties_section}", properties_section)
              .replace("{classes_section}", classes_section)
              )
@@ -214,7 +238,7 @@ def main():
     all_axioms = Graph()
     if "candidate_axioms" in axiom_response:
         for axiom in axiom_response['candidate_axioms']:
-            turtle = prefixes + "\n\n" +axiom
+            turtle = prefixes + "\n\n" + axiom
             print(turtle)
             axiom_graph = Graph()
             axiom_graph.parse(io.StringIO(turtle), format="turtle")
@@ -231,7 +255,7 @@ def main():
                         all_axioms += axiom_graph
     if "reasoning" in axiom_response:
         print(axiom_response['reasoning'])
-    all_axioms.serialize(format="turtle", destination=PROJECT_ROOT / "generated"/ "output.ttl")
+    all_axioms.serialize(format="turtle", destination=PROJECT_ROOT / "generated" / "output.ttl")
 
 
 if __name__ == "__main__":

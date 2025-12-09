@@ -17,6 +17,7 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
   input_file = DATA_ROOT / "definitions.csv"
   bfo_cco_terms = DATA_ROOT / "bfo_cco_terms.csv"
   output_file = DATA_ROOT / "definitions_enriched.csv"
+  phrase_differences = DATA_ROOT / "phrase_differences.csv"
 
   # Environment-driven parameters
   reference_mode = os.getenv("REFERENCE_MODE", "retrieve").lower()  # off | full | retrieve | fuzzy
@@ -61,6 +62,7 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
     "model_name": model_name,
     "temperature": temperature,
     "reference_ontology": reference_ontology,
+    "phrase_differences": phrase_differences,
     # Vector search
     "vector_db_uri": vector_db_uri,
     "vector_collection_classes": vector_collection_classes,
