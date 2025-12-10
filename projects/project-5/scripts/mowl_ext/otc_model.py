@@ -10,9 +10,11 @@ from util.logger_config import config
 logger = logging.getLogger(__name__)
 config(logger)
 
+
 class OtcModel(ELEmbeddings):
     def train(self, epochs=None, validate_every=1):
-        logger.warning('You are using the default training method. If you want to use a cutomized training method (e.g., different negative sampling, etc.), please reimplement the train method in a subclass.')
+        logger.warning(
+            'You are using the default training method. If you want to use a cutomized training method (e.g., different negative sampling, etc.), please reimplement the train method in a subclass.')
 
         # Expose losses for external selection/tuning logic
         if not hasattr(self, "best_validation_loss"):
@@ -108,9 +110,10 @@ class OtcModel(ELEmbeddings):
                                 best_loss = valid_loss
                                 self.best_validation_loss = float(best_loss)
                                 th.save(self.module.state_dict(), self.model_filepath)
-                            print(f'Epoch {epoch+1}: Train loss: {train_loss} Valid loss: {valid_loss} (n={contributing})')
+                            print(
+                                f'Epoch {epoch + 1}: Train loss: {train_loss} Valid loss: {valid_loss} (n={contributing})')
                         else:
                             # No validation data available this epoch.
-                            print(f'Epoch {epoch+1}: Train loss: {train_loss} (no validation data)')
+                            print(f'Epoch {epoch + 1}: Train loss: {train_loss} (no validation data)')
                 else:
-                    print(f'Epoch {epoch+1}: Train loss: {train_loss}')
+                    print(f'Epoch {epoch + 1}: Train loss: {train_loss}')

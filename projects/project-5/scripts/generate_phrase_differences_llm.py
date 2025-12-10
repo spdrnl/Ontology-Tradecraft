@@ -4,15 +4,15 @@ from typing import Any, List
 
 import dotenv
 import pandas as pd
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import ChatOllama
 
-from common.settings import build_settings
-from preprocessing.io import read_csv, write_df_to_csv
+from common.io import read_csv, write_df_to_csv
 from common.ontology_utils import (
     get_parent_property_by_label,
     get_parent_class_by_label,
 )
+from common.settings import build_settings
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,6 @@ dotenv.load_dotenv()
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
 OUTPUT_FILE = DATA_ROOT / "phrase_differences.csv"
-
 
 # Separate prompts for properties (verb phrases) and classes (noun phrases)
 PROMPT_TEMPLATE_PROPERTY = (
@@ -55,6 +54,7 @@ def main():
 
     # Load settings
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
+    DATA_ROOT.mkdir(parents=True, exist_ok=True)
 
     # Read input CSV (definitions)
     input_csv = settings.get("input_file", DATA_ROOT / "definitions.csv")
@@ -64,6 +64,7 @@ def main():
     # LLM
     logger.info("Initializing LLM with model: %s", settings["model_name"])
     llm = ChatOllama(model=settings["model_name"], temperature=settings["temperature"])
+
     # Build two chains: one for properties and one for classes
     prop_prompt_tmpl, prop_chain = _build_chain(llm, PROMPT_TEMPLATE_PROPERTY)
     class_prompt_tmpl, class_chain = _build_chain(llm, PROMPT_TEMPLATE_CLASS)
@@ -127,10 +128,8 @@ def main():
                     # Choose appropriate prompt and chain based on element type
                     if type_name == "property":
                         tmpl = prop_prompt_tmpl
-                        chain = prop_chain
                     else:
                         tmpl = class_prompt_tmpl
-                        chain = class_chain
 
                     # Build prompt messages and inject labels for X and Y
                     msgs = tmpl.format_messages()
@@ -143,7 +142,7 @@ def main():
                     if difference.startswith("The difference is:"):
                         status = "OK"
                         difference = difference[len("The difference is:"):].strip()
-                    else :
+                    else:
                         status = "NOK"
                 except Exception as e:
                     logger.warning("LLM invocation failed for %s: %s", label, e)

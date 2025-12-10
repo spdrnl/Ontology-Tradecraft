@@ -3,8 +3,8 @@ from __future__ import annotations
 import mowl
 import torch
 
-from common.json_extraction import extract_json
-from filter_candidates.subroutines import _load_metrics, _load_definitions, filter_candidates, load_candidates, \
+from common.llm_communication import extract_json
+from filter_candidates_hybrid.subroutines import _load_metrics, _load_definitions, filter_candidates, load_candidates, \
     LLMConfig, _build_langchain_ollama, _build_user_prompt, _write_accepted, _init_model_for_embeddings, \
     _get_system_prompt
 

@@ -29,9 +29,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import random
 from pathlib import Path
 from typing import List, Tuple
-import random
 
 from rdflib import Graph, Namespace, RDF, RDFS, OWL, URIRef
 

@@ -1,7 +1,7 @@
-import requests
-from pathlib import Path
-import pprint
 import json
+from pathlib import Path
+
+import requests
 
 PROJECT_ROOT = Path(__file__).parent.parent
 path = PROJECT_ROOT / Path("prompts/generate_candidates_prompts.md")

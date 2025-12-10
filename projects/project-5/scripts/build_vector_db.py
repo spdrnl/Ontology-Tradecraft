@@ -2,8 +2,8 @@ import logging
 from pathlib import Path
 from typing import List
 
-import pandas as pd
 import dotenv
+import pandas as pd
 
 from common.settings import build_settings
 from util.logger_config import config

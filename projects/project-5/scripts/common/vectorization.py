@@ -49,7 +49,9 @@ def vector_top_k(query: str, elem_type: str, top_k: int, settings: dict) -> List
             search_params={"metric_type": "COSINE"},
         )
         hits = res[0] if res else []
-        return [{"distance": h.get("distance", 0.0), "label": h['entity']['label'], "definition": h['entity']['definition'], "iri": h['entity']['iri']} for h in hits]
+        return [
+            {"distance": h.get("distance", 0.0), "label": h['entity']['label'], "definition": h['entity']['definition'],
+             "iri": h['entity']['iri']} for h in hits]
 
     t = (elem_type or "").strip().lower()
     if t == "class":

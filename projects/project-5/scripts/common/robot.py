@@ -10,6 +10,7 @@ from util.logger_config import config
 logger = logging.getLogger(__name__)
 config(logger)
 
+
 def detect_robot(robot_arg: str, robot_dir: Path) -> list[str]:
     """Return the command (argv list) to invoke ROBOT.
 

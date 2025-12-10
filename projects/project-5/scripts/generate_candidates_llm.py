@@ -1,50 +1,35 @@
 import argparse
-import io
-import json
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import List
 
 import nltk
 import pandas as pd
-import requests
 from nltk.corpus import stopwords
 from pydantic import BaseModel
 from rdflib import Graph
 from rdflib import URIRef
 
-from common.json_extraction import extract_json
+from common.llm_communication import call_llm_over_http
 from common.ontology_utils import get_turtle_snippet_by_uri_ref
 from common.prompt_loading import load_markdown_prompt_templates
-from common.robot import detect_robot, build_elk_robot_command, run
 from common.settings import build_settings
 from common.string_normalization import collect_labels, filter_labels, collect_words, filter_stopwords
-from common.vectorization import vector_top_k
+from generate_candidates.subroutines import elk_check_axioms, create_axiom_graph, add_candidates_from_other_words, \
+    add_candidates_from_labels
 from util.logger_config import config
 
 PROJECT_ROOT = Path(__file__).parent.parent
 ROBOT_DIR = PROJECT_ROOT / "robot"
 DATA_ROOT = PROJECT_ROOT / "data"
+GENERATED_ROOT = PROJECT_ROOT / "generated"
 path = PROJECT_ROOT / Path("prompts/generate_candidates_prompts.md")
 
 logger = logging.getLogger(__name__)
 config(logger)
 
 nltk.download('stopwords')
-
-prefixes = """
-@prefix cco: <https://www.commoncoreontologies.org/> .
-@prefix obo: <http://purl.obolibrary.org/obo/> .
-@prefix bfo: <http://purl.obolibrary.org/obo/> .
-@prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix xml: <http://www.w3.org/XML/1998/namespace> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-""".strip()
 
 
 class LlmResponse(BaseModel):
@@ -94,6 +79,8 @@ def main():
     args = parse_args()
 
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
+
+    GENERATED_ROOT.mkdir(parents=True, exist_ok=True)
 
     stop_words = set(stopwords.words('english'))
 
@@ -166,40 +153,12 @@ def main():
 
     # Collect directly recognized class and property labels
     labels = collect_labels(target_definition, reference_terms_df["label"].tolist())
-    for label in labels:
-        if label in labels_to_iri:
-            if labels_to_iri[label]["type"] == "class":
-                class_candidates.append((label, labels_to_iri[label]["iri"]))
-            elif labels_to_iri[label]["type"] == "property":
-                property_candidates.append((label, labels_to_iri[label]["iri"]))
+    add_candidates_from_labels(labels, labels_to_iri, class_candidates, property_candidates)
 
     # Do a vector search for other candidates
-    property_working_set = []
-    class_working_set = []
-
-    for word in other_words:
-        property_vector_suggestions = vector_top_k(word, "property", ref_top_k, settings)
-        for suggestion in property_vector_suggestions:
-            property_working_set.append(suggestion)
-
-        class_vector_suggestions = vector_top_k(word, "class", ref_top_k, settings)
-        for suggestion in class_vector_suggestions:
-            class_working_set.append(suggestion)
-
-    property_working_set.sort(key=lambda x: x["distance"], reverse=True)
-    property_working_set = property_working_set[:ref_top_k]
-
-    class_working_set.sort(key=lambda x: x["distance"], reverse=True)
-    class_working_set = class_working_set[:ref_top_k]
-
-    for suggestion in property_working_set:
-        property_candidates.append((suggestion["label"], suggestion["iri"]))
-
-    for suggestion in class_working_set:
-        class_candidates.append((suggestion["label"], suggestion["iri"]))
-
-    property_candidates = property_candidates[:ref_top_k]
-    class_candidates = class_candidates[:ref_top_k]
+    class_candidates, property_candidates = add_candidates_from_other_words(other_words, ref_top_k, class_candidates,
+                                                                            property_candidates,
+                                                                            settings)
 
     # Create mapping sections
     properties_section = ""
@@ -224,38 +183,22 @@ def main():
     print(query)
 
     url = "http://localhost:11434/api/generate"
+    json_response = call_llm_over_http(url, query)
+    axiom_response = json_response['response']
 
-    data = {
-        "model": "gemma3n",
-        "prompt": query,
-        "stream": False
-    }
-
-    response = requests.post(url, json=data)
-    print(response.text)
-    raw_reponse = json.loads(response.text)
-    axiom_response = extract_json(raw_reponse['response'])
     all_axioms = Graph()
     if "candidate_axioms" in axiom_response:
         for axiom in axiom_response['candidate_axioms']:
-            turtle = prefixes + "\n\n" + axiom
-            print(turtle)
-            axiom_graph = Graph()
-            axiom_graph.parse(io.StringIO(turtle), format="turtle")
-            test_graph = all_axioms + axiom_graph
-            robot_cmd = detect_robot(args.robot, ROBOT_DIR)
-            with tempfile.NamedTemporaryFile(suffix=".ttl") as in_path:
-                with tempfile.NamedTemporaryFile(suffix=".ttl") as out_path:
-                    test_graph.serialize(format="turtle", destination=in_path.name)
-                    cmd = build_elk_robot_command(Path(in_path.name), Path(out_path.name), robot_cmd, args.max_mem)
-                    if run(cmd) != 0:
-                        logger.info("Axiom failed ELK reasoner: %s")
-                        logger.info("Axiom: %s", axiom)
-                    else:
-                        all_axioms += axiom_graph
+            axiom_graph = create_axiom_graph(axiom)
+            status = elk_check_axioms(all_axioms, args, axiom_graph, ROBOT_DIR)
+            if status != 0:
+                logger.info("Axiom failed ELK reasoner: %s")
+                logger.info("Axiom: %s", axiom)
+            else:
+                all_axioms += axiom_graph
     if "reasoning" in axiom_response:
         print(axiom_response['reasoning'])
-    all_axioms.serialize(format="turtle", destination=PROJECT_ROOT / "generated" / "output.ttl")
+    all_axioms.serialize(format="turtle", destination=GENERATED_ROOT / "output.ttl")
 
 
 if __name__ == "__main__":

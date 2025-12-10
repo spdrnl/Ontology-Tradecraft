@@ -1,4 +1,3 @@
-from nltk.stem.snowball import SnowballStemmer
 import re
 from typing import Iterable, Set, List
 
@@ -137,6 +136,7 @@ def stem_words(words: Iterable[str]) -> List[str]:
     for word in words:
         stem = stemmer.stem(word)
         stemmed_words.append(stem)
+
 
 def filter_stopwords(words: Iterable[str], stopwords: Iterable[str]) -> List[str]:
     return list(set(words) - set(stopwords))

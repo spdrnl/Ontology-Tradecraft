@@ -5,11 +5,13 @@ import dotenv
 import pandas as pd
 from langchain_ollama import ChatOllama
 
+from common.io import read_csv, write_df_to_csv, read_reference_entries
+from common.llm_communication import call_llm_over_http
 from common.prompt_loading import load_markdown_prompt_templates, build_prompts
 from common.settings import build_settings
-from preprocessing.enriching import enrich, normalize_prefix
-from preprocessing.io import read_csv, write_df_to_csv, read_reference_entries
 from common.string_normalization import remove_snake_case, apply_label_casing, apply_single_quotes
+from preprocess_definitions.definition_normalization import normalize_definition_prefix, create_class_definition_prompt, \
+    create_property_definition_prompt
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -20,11 +22,6 @@ dotenv.load_dotenv()
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
 
-# Goals:
-# - X is a Y that Z's
-# - Ambiguity is removed
-# - Abbreviations expanded
-# - Terminology aligned to CCO style
 
 def main():
     logger.info("===================================================================")
@@ -44,8 +41,8 @@ def main():
 
     # Load prompt config file
     logger.info(f"Loading prompt templates from: {settings['prompt_cfg_file']}")
-    prompt_texts = load_markdown_prompt_templates(settings["prompt_cfg_file"])
-    prompts, chains = build_prompts(llm, prompt_texts)
+    prompts = load_markdown_prompt_templates(settings["prompt_cfg_file"])
+    #prompts, chains = build_prompts(llm, prompt_texts)
 
     # Load BFO/CCO reference entries
     ref_entries = read_reference_entries(settings)
@@ -60,8 +57,11 @@ def main():
     logger.info("Enriching definitions...")
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
     logger.info("Building and querying reference context per row...")
-    df['status'] = 'None'
+    df['status'] = 'PENDING'
     success = 0
+    url = "http://localhost:11434/api/generate"
+
+    # Allow for retries
     for iter in range(10):
         out_rows = []
         for _, r in df.iterrows():
@@ -70,42 +70,78 @@ def main():
             status = r["status"]
             definition = r["definition"]
             type_name = r["type"]
+            improved_definition = r["definition"]
 
-            if status == "OK":
-                improved_definition = r['definition']
-            else:
-                improved_definition = enrich(iri,
-                                             label,
-                                             type_name,
-                                             definition,
-                                             chains,
-                                             prompts,
-                                             phrase_diffs_dict,
-                                             ref_entries,
-                                             ref_labels,
-                                             settings)
+            # Improve the definition if it has not already been improved
+            if status != "OK":
+                if type_name not in {"class", "property"}:
+                    logger.error(f"Skipping {iri} ({label}) of type {type_name} as it is not a class or property.")
 
-                improved_definition = improved_definition.replace("if and only if", "iff")
-                if (('individual i' not in improved_definition)
-                    or (r["type"] == "property" and "individual j" not in improved_definition)
-                    or ('class D' in improved_definition)
-                    or ('class C' in improved_definition)
-                    or ('property Z' in improved_definition)
-                    or ('iff' not in improved_definition)):
-                    status = "NOK"
-                    print(f"[{r['definition']}]")
-                    print(f"[{improved_definition}]")
-                    improved_definition = r["definition"]
+                if type_name == "class":
+                    prompt = create_class_definition_prompt(iri,
+                                                            label,
+                                                            type_name,
+                                                            definition,
+                                                            prompts,
+                                                            phrase_diffs_dict,
+                                                            ref_entries,
+                                                            ref_labels,
+                                                            settings)
                 else:
+                    prompt = create_property_definition_prompt(iri,
+                                                               label,
+                                                               type_name,
+                                                               definition,
+                                                               prompts,
+                                                               phrase_diffs_dict,
+                                                               ref_entries,
+                                                               ref_labels,
+                                                               settings)
+
+                logger.info(f"Querying LLM for improved definition of {iri} ({label})...")
+                logger.info(prompt)
+                prompt_response = call_llm_over_http(url, prompt)
+                improved_definition = prompt_response['improved_definition']
+                improved_definition = improved_definition.replace("if and only if", "iff")
+
+                # Sanity check
+                if type_name == "class":
+                    if (("individual i" not in improved_definition)
+                        or ("iff" not in improved_definition)
+                        or ("'X'" in improved_definition)
+                        or ("'Y'" in improved_definition)
+                        or ("'Z'" in improved_definition)):
+                        status = "NOK"
+                    else:
+                        status = "OK"
+                elif type_name == "property":
+                    # Sanity check
+                    if (("individual i" not in improved_definition)
+                        or ("individual j" not in improved_definition)
+                        or ("iff" not in improved_definition)
+                        or ("'X'" in improved_definition)
+                        or ("'Y'" in improved_definition)
+                        or ("'C'" in improved_definition)
+                        or ("'D'" in improved_definition)
+                        or ("'Z'" in improved_definition)):
+                        status = "NOK"
+                    else:
+                        status = "OK"
+
+                if status == "OK":
                     improved_definition = remove_snake_case(improved_definition)
                     improved_definition = apply_label_casing(improved_definition, ref_labels)
                     improved_definition = apply_single_quotes(improved_definition, ref_labels)
-                    improved_definition = normalize_prefix(improved_definition, type_name, label)
+                    improved_definition = normalize_definition_prefix(improved_definition, type_name, label)
                     success += 1
                     print(f"Success {success} out of {len(df)} rows.")
                     print(f"[{definition}]")
                     print(f"[{improved_definition}]")
-                    status = "OK"
+                else:
+                    print(f"[{r['definition']}]")
+                    print(f"[{improved_definition}]")
+                    # Revert to original definition
+                    improved_definition = r["definition"]
 
             out_rows.append({
                 "iri": iri,
@@ -117,15 +153,12 @@ def main():
 
         out_df = pd.DataFrame(out_rows)
         out_df = out_df[["iri", "label", "type", "status", "definition"]]
+        logger.info(f"Writing results CSV to: {settings['output_file']}")
         write_df_to_csv(out_df, settings["output_file"])
-        df = out_df
+        logger.info("Checking if all definitions are improved.")
         if (df["status"] == "OK").all():
             break
 
-    # Write result
-    out_df = out_df[["iri", "label", "type", "status", "definition"]]
-    logger.info(f"Writing enriched CSV to: {settings['output_file']}")
-    write_df_to_csv(out_df, settings["output_file"])
     logger.info("Done.")
 
 

@@ -11,10 +11,8 @@ from util.logger_config import config
 logger = logging.getLogger(__name__)
 config(logger)
 
-
 PROJECT_ROOT = Path(__file__).parent.parent
 SRC_ROOT = PROJECT_ROOT / "src"
-
 
 DECLARATIONS_CONSTRUCT = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -66,7 +64,8 @@ def run_robot(args: list[str], cwd: Path | None = None):
     logger.info("Running: %s", " ".join(cmd))
     proc = subprocess.run(cmd, cwd=str(cwd) if cwd else None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if proc.returncode != 0:
-        logger.error("ROBOT command failed (exit %s)\nSTDOUT:\n%s\nSTDERR:\n%s", proc.returncode, proc.stdout, proc.stderr)
+        logger.error("ROBOT command failed (exit %s)\nSTDOUT:\n%s\nSTDERR:\n%s", proc.returncode, proc.stdout,
+                     proc.stderr)
         raise RuntimeError(f"ROBOT failed with exit code {proc.returncode}")
     if proc.stdout.strip():
         logger.debug("ROBOT STDOUT:\n%s", proc.stdout)

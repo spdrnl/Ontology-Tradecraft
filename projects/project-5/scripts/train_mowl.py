@@ -57,7 +57,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--optuna", action="store_true", help="Use Optuna to tune dim, lr, margin, and reg_norm")
     p.add_argument("--trials", type=int, default=20, help="Number of Optuna trials to run when --optuna is set")
     p.add_argument("--study-name", type=str, default="mowl-elembeddings", help="Optuna study name")
-    p.add_argument("--storage", type=str, default=None, help="Optuna storage URL (e.g., sqlite:///optuna.db). If not set, use in-memory")
+    p.add_argument("--storage", type=str, default=None,
+                   help="Optuna storage URL (e.g., sqlite:///optuna.db). If not set, use in-memory")
     p.add_argument("--out", default=str(REPORTS_ROOT / "mowl_metrics.json"), help="Path to write metrics JSON")
     return p.parse_args()
 
@@ -76,7 +77,8 @@ def load_dataset(train_path: Path, valid_path: Path, eval_scope: str):
     return ds
 
 
-def init_model(dataset, dim: int, lr: float, margin: float, batch_size: int, reg_norm: float, model_suffix: str | None = None):
+def init_model(dataset, dim: int, lr: float, margin: float, batch_size: int, reg_norm: float,
+               model_suffix: str | None = None):
     ckpt_dir = PROJECT_ROOT / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     filename = "elembeddings.model" if not model_suffix else f"elembeddings.{model_suffix}.model"
@@ -179,6 +181,7 @@ def _validation_loss_from_model(model) -> float:
 
 def _optuna_objective(dataset, base_args) -> optuna.trial.TrialCallable:
     """Create an Optuna objective callable that trains OtcModel and returns validation loss."""
+
     def objective(trial: optuna.Trial) -> float:
         # Suggest hyperparameters
         dim = trial.suggest_categorical("dim", [2, 4, 8, 16, 32])
@@ -257,7 +260,8 @@ def main():
         best = study.best_trial
         best_params = best.params
         best_value = float(best.value) if best.value is not None else None
-        logger.info("Optuna best params: %s (val_loss=%.6f)", best_params, best_value if best_value is not None else float('inf'))
+        logger.info("Optuna best params: %s (val_loss=%.6f)", best_params,
+                    best_value if best_value is not None else float('inf'))
 
         # Set final hyperparameters
         final_dim = int(best_params.get('dim', final_dim))
@@ -267,7 +271,8 @@ def main():
 
         # Re-instantiate model with selected hyperparameters
         selected_suffix = f"optuna.best.d{final_dim}.lr{final_lr:.2e}.m{final_margin:.2f}.r{final_reg_norm:.2e}"
-        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch, reg_norm=final_reg_norm, model_suffix=selected_suffix)
+        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch,
+                           reg_norm=final_reg_norm, model_suffix=selected_suffix)
         # Train the chosen configuration once more to ensure weights are present
         train_model(model, dataset, epochs=args.epochs)
 
@@ -282,7 +287,8 @@ def main():
 
     else:
         # Single run with default reg_norm=1.0
-        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch, reg_norm=final_reg_norm)
+        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch,
+                           reg_norm=final_reg_norm)
         train_model(model, dataset, epochs=args.epochs)
 
     # Evaluate cosine on validation subclass pairs using the selected/best model

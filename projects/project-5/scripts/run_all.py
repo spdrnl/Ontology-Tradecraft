@@ -1,12 +1,12 @@
+import logging
 from pathlib import Path
+
 import extract_definitions
 import extract_reference_terms
 import filter_candidates_hybrid
 import generate_phrase_differences_llm
 import merge_cco_with_ieo_robot
 import preprocess_definitions_llm
-import logging
-
 import robot_elk
 import robot_merge
 from util.logger_config import config
@@ -20,6 +20,7 @@ GENERATED_ROOT = PROJECT_ROOT / "generated"
 REPORTS_ROOT = PROJECT_ROOT / "reports"
 SCRIPTS_ROOT = PROJECT_ROOT / "scripts"
 SRC_ROOT = PROJECT_ROOT / "src"
+
 
 def main():
     logger.info("=======================================")

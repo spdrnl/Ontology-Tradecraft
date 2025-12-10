@@ -1,6 +1,6 @@
 import logging
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pandas as pd
 import rdflib
@@ -66,11 +66,11 @@ def extract_definitions(g):
         if raw_label is None:
             label = None
         elif ent_type == "property":
-            #label = snake_case_label(raw_label)
+            # label = snake_case_label(raw_label)
             label = raw_label
         else:
             # default to class-style capitalization
-            #label = capitalize_label(raw_label)
+            # label = capitalize_label(raw_label)
             label = raw_label
 
         rows.append([iri, label, definition, ent_type])
@@ -78,9 +78,13 @@ def extract_definitions(g):
 
 
 def capitalize_label(label: str) -> str:
-    if label is None: return None
-    elif len(label) <= 2: return label
-    else: return " ".join([label.capitalize() for label in label.split(" ")])
+    if label is None:
+        return None
+    elif len(label) <= 2:
+        return label
+    else:
+        return " ".join([label.capitalize() for label in label.split(" ")])
+
 
 def snake_case_label(label: str) -> str:
     """Convert a label to snake_case (for property labels).
@@ -104,8 +108,10 @@ def snake_case_label(label: str) -> str:
     s = s.strip("_")
     return s
 
+
 def rows_to_df(rows):
     return pd.DataFrame(rows, columns=["iri", "label", "definition", "type"])
+
 
 def write_df_to_csv(df, OUTPUT_FILE):
     df.to_csv(OUTPUT_FILE, index=False)
