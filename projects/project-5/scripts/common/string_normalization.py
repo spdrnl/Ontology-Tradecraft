@@ -62,49 +62,49 @@ def contains(text: str, value: str) -> str:
 def replace_x_and_y(line: str):
     line = re.sub(
         r"^x ",
-        "individual i ",
+        "individual x ",
         line
     )
 
     line = re.sub(
         r" x,",
-        " individual i,",
+        " individual x,",
         line
     )
 
     line = re.sub(
         r" x\.",
-        " individual i.",
+        " individual x.",
         line
     )
 
     line = re.sub(
         r" x ",
-        " individual i ",
+        " individual x ",
         line
     )
 
     line = re.sub(
         r"^y ",
-        "individual j ",
+        "individual y ",
         line
     )
 
     line = re.sub(
         r" y,",
-        " individual j,",
+        " individual y,",
         line
     )
 
     line = re.sub(
         r" y\.",
-        " individual j.",
+        " individual y.",
         line
     )
 
     line = re.sub(
         r" y ",
-        " individual j ",
+        " individual y ",
         line
     )
 
