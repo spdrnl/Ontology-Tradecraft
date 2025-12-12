@@ -18,6 +18,7 @@ In effect, each class in an ontology is defined using a genus and a differentia.
 The template for a good definition of a class is:
 "individual x is a 'X' iff individual x is a 'Y', such that 'Z'".
 Here:
+
 - 'X' is the label of the class to be improved, for a class 'X' is a noun phrase.
 - 'Y' is the label of parent class or genus of the target CLASS
 - 'Z' is a description of the differentia.
@@ -38,6 +39,7 @@ Make sure to reuse all the phrases in single quotes from the current definition.
 ### User
 
 The instructions of the task are:
+
 - Use a single sentence.
 - Any ambiguities should be resolved by rephrasing in a clear and concise manner.
 - Expand abbreviations.
@@ -51,8 +53,8 @@ The instructions of the task are:
 - The definition MUST include the differentia 'Z'.
 - DO NOT use the words in phrase 'X' in the description of the differentia 'Z'.
 - Add any additional information from the current definition in the description of the differentia 'Z'.
-- Phrases in single quotes MUST NOT be rewritten and should always output literally in the the improved 
-  definition, 
+- Phrases in single quotes MUST NOT be rewritten and should always output literally in the the improved
+  definition,
   with the quotes.
 - Do not add single quotes yourself.
 - Do not use cyrillic characters in the definition.
@@ -64,10 +66,12 @@ The instructions of the task are:
 
 Make sure to refer to explicitly refer to 'individual x' in the definition, instead of just 'x' or another letter.
 Below is the label for the target CLASS; improve its definition as explained:
+
 - label: {label}
 - definition: {definition}
 
 The automatic definition of the target CLASS is:
+
 - {automatic_definition}
 
 ## Property
@@ -87,10 +91,11 @@ The differentia of a property is the aspect that differentiates from its genus.
 In effect, each property in an ontology is defined using by its domain and range and its parent property.
 
 The template for a good definition of a class is:
-"individual x 'X' individual y iff individual x 'Y' individual y [and individual x is a 'D'] and [individual y is a 
+"individual x 'X' individual y iff individual x 'Y' individual y [and individual x is a 'D'] and [individual y is a
 'R'], such that 'Z'."
 
 Here is an explanation:
+
 - 'X' is the label of the target PROPERTY to be improved, for a property 'X' is a verb phrase.
 - 'Y' is the parent property or genus of the target PROPERTY; omit if the target PROPERTY does not have a parent.
 - 'D' is the domain of the target PROPERTY; omit if it is similar to the domain of the parent property labeled 'Y'.
@@ -106,6 +111,7 @@ The improved definition will be used to automatically generate axioms in a next 
 Therefore, the improved definition MUST adhere to the given template.
 
 In the reference context, and axiomatic definition is provided which can include:
+
 - the parent property labeled 'Y';
 - the domain of the target PROPERTY labeled 'D';
 - the range of the target PROPERTY labeled 'R'.
@@ -124,6 +130,7 @@ instead of just 'x' or another letter.
 ### User
 
 The instructions are:
+
 - Use a single sentence.
 - Any ambiguities should be resolved by rephrasing in a clear and concise manner.
 - Expand abbreviations.
@@ -131,14 +138,15 @@ The instructions are:
 - The improved definition must start with: `'individual x ...`.
 - The word "iff", which is short of 'if and only if' MUST be in the new and improved definition.
 - The word 'iff" appears just after the phrase "individual x 'X' individual y".
-- After the phrase "individual x 'Y' individual y [and individual x is a 'D'] and [individual y is a 'R']" only the 
+- After the phrase "individual x 'Y' individual y [and individual x is a 'D'] and [individual y is a 'R']" only the
   phrase ", such that" can follow.
 - The definition MUST contain the phrase ", such that" to introduce the differentia 'Z'.
 - The description of the differentia 'Z' MUST appear after the words "such that".
 - The definition MUST include the differentia 'Z'.
 - Add any additional information from the current definition in the description of the differentia 'Z'.
 - DO NOT use the words in phrase 'X' or phrase 'Y' in the description of the differentia 'Z'.
-- Phrases in single quotes MUST NOT be rewritten and should always output literally in the the improved definition, with the quotes.
+- Phrases in single quotes MUST NOT be rewritten and should always output literally in the the improved definition, with
+  the quotes.
 - Do not add single quotes yourself.
 - Do not use cyrillic characters in the definition.
 - Do not output the literal characters 'X', 'Y' or 'Z' directly in the definition.
@@ -148,10 +156,12 @@ The instructions are:
   - reasoning
 
 Below is the label for the target PROPERTY; improve its definition as explained:
+
 - label: {label}
 - definition: {definition}
 
 The automatic definition of the target PROPERTY is:
+
 - {automatic_definition}
 
 Additional information about the parent property 'Y' is:

@@ -4,11 +4,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -133,15 +134,21 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
-def main(argv=None):
-    args = parse_args(argv)
-    try:
-        merge_with_declarations_only(args.cco, args.ieo, args.out)
-    except Exception as e:
-        logger.error("Failed to merge ontologies: %s", e)
-        return 1
-    return 0
+def main(
+    cco: str | Path = str(SRC_ROOT / "CommonCoreOntologiesMerged.ttl"),
+    ieo: str | Path = str(SRC_ROOT / "InformationEntityOntology.ttl"),
+    out: str | Path = str(SRC_ROOT / "ConsolidatedCCO.ttl"),
+) -> None:
+    cco_path = Path(cco)
+    ieo_path = Path(ieo)
+    out_path = Path(out)
+    merge_with_declarations_only(cco_path, ieo_path, out_path)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        args = parse_args()
+        main(args.cco, args.ieo, args.out)
+    except Exception as e:
+        logger.error("Failed to merge ontologies: %s", e)
+        sys.exit(1)

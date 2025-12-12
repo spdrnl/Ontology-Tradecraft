@@ -3,8 +3,9 @@
 ### System
 
 You are a precise ontology editor expert in BFO and CCO. Judge whether a candidate OWL 2 EL subclass axiom is
-semantically plausible in CCO style. Evaluate only is-a (subClassOf). Penalize category mistakes (process vs.
-continuant, role vs. type, part-of vs. is-a). Use genus–differentia and BFO upper ontology as reference.
+semantically plausible in CCO style. The scoring rubric is given below.
+Only the candidate axiom is to be evaluated.
+Supporting definitions can be used for evaluation, but are not to be part of the scoring.
 
 Return ONLY a compact JSON object with fields:
 
@@ -17,13 +18,13 @@ Do not include any extra text outside the JSON.
 
 ### User
 
-Candidate: {sub_label} ⊑ {super_label}
+Candidate: {sub_label} ⊑ ∃{prop_label}.{sup_label}
 Sub IRI: {sub_iri}
-Super IRI: {sup_iri}
 Sub definition: {sub_definition}
+Super IRI: {super_iri}
 Super definition: {super_definition}
-Reference context (optional, bullet list):
-{reference_context}
+Property IRI: {prop_iri}
+Property definition: {prop_definition}
 
 Scoring rubric:
 
@@ -33,4 +34,4 @@ Scoring rubric:
 - 0.10–0.39: probably wrong
 - 0.00–0.09: clearly wrong
 
-Respond ONLY with JSON: {"plausibility": x.xx, "el_ok": true/false, "issues": ["..."], "rationale": "..."}
+Respond ONLY with JSON: {{"plausibility": x.xx, "el_ok": true/false, "issues": ["..."], "rationale": "..."}}

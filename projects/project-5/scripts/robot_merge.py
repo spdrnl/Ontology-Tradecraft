@@ -5,21 +5,27 @@ import argparse
 import logging
 import os
 import sys
-from pathlib import Path
 
-from common.robot import detect_robot, run
+from common.robot import detect_robot, run, build_merge_robot_command
+from common.settings import build_settings
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
+settings = build_settings(PROJECT_ROOT, DATA_ROOT)
 GENERATED_ROOT = PROJECT_ROOT / "generated"
+DEFAULT_MERGE_AXIOMS = GENERATED_ROOT / "accepted_el.ttl"
 SRC_ROOT = PROJECT_ROOT / "src"
+DEFAULT_OUTPUT_FILE = SRC_ROOT / "module_augmented.ttl"
 ROBOT_DIR = PROJECT_ROOT / "robot"
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(settings) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Merge generated/accepted_el.ttl with src/cco-module.ttl using ROBOT, reason with ELK, "
@@ -28,17 +34,21 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--base",
-        default=str(SRC_ROOT / "InformationEntityOntology.ttl"),
+        default=str(settings["reference_ontology"]),
         help="Base ontology TTL to merge into (default: src/InformationEntityOntology.ttl)",
     )
     p.add_argument(
         "--add",
-        default=str(GENERATED_ROOT / "accepted_el.ttl"),
-        help="Generated axioms TTL to add (default: generated/accepted_el.ttl)",
+        action="append",
+        help=(
+            "Additional TTL file(s) to merge. May be provided multiple times, e.g. "
+            "--add generated/accepted_el.ttl --add other.ttl. "
+            "If omitted, defaults to generated/accepted_el.ttl"
+        ),
     )
     p.add_argument(
         "--out",
-        default=str(SRC_ROOT / "module_augmented.ttl"),
+        default=str(DEFAULT_OUTPUT_FILE),
         help="Output TTL path (default: src/module_augmented.ttl)",
     )
     p.add_argument(
@@ -51,23 +61,51 @@ def parse_args() -> argparse.Namespace:
         default=os.getenv("ROBOT_JAVA_MAX_MEM", "6g"),
         help="Max Java heap for ROBOT when using robot.jar (default: 6g)",
     )
-    return p.parse_args()
+    args = p.parse_args()
+
+    # Default for --add if not provided
+    if not args.add:
+        args.add = [str(DEFAULT_MERGE_AXIOMS)]
+
+    # Support accidental comma-separated lists in a single --add
+    expanded: list[str] = []
+    for val in args.add:
+        if isinstance(val, str) and "," in val:
+            expanded.extend([v.strip() for v in val.split(",") if v.strip()])
+        else:
+            expanded.append(val)
+    args.add = expanded
+
+    return args
 
 
-def main() -> None:
-    args = parse_args()
-    base = Path(args.base)
-    add = Path(args.add)
-    out = Path(args.out)
+def main(
+    base: str = str(settings["reference_ontology"]),
+    add: list[str] | tuple[str, ...] | str = str(DEFAULT_MERGE_AXIOMS),
+    out: str = str(DEFAULT_OUTPUT_FILE),
+    robot: str | None = None,
+    max_mem: str = os.getenv("ROBOT_JAVA_MAX_MEM", "6g"),
+) -> None:
+
+    base = Path(base)
+    # Normalize add to a list of Paths
+    if isinstance(add, (list, tuple)):
+        add_paths = [Path(a) for a in add]
+    else:
+        add_paths = [Path(add)]
+    out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
 
     if not base.exists():
         raise FileNotFoundError(f"Base ontology not found: {base}")
-    if not add.exists():
-        raise FileNotFoundError(f"Generated axioms file not found: {add}")
+    missing = [p for p in add_paths if not p.exists()]
+    if missing:
+        raise FileNotFoundError(
+            "One or more generated axioms files not found: " + ", ".join(str(m) for m in missing)
+        )
 
-    robot_cmd = detect_robot(args.robot, ROBOT_DIR)
-    cmd = build_robot_command(base, add, out, robot_cmd, args.max_mem)
+    robot_cmd = detect_robot(robot, ROBOT_DIR)
+    cmd = build_merge_robot_command(base, add_paths, out, robot_cmd, max_mem)
     run(cmd)
 
     if not out.exists() or out.stat().st_size == 0:
@@ -77,48 +115,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     try:
-        main()
+        args = parse_args(settings)
+        main(args.base, args.add, args.out, args.robot, args.max_mem)
     except Exception as e:
-        logger.error("merge_ttl failed: %s", e)
+        logger.error("robot_merge failed: %s", e)
         sys.exit(1)
 
 
-def build_robot_command(
-    base_ttl: Path, add_ttl: Path, out_ttl: Path, robot_cmd: list[str], max_mem: str
-) -> list[str]:
-    """Construct the ROBOT command to merge, reason with ELK, and save result."""
-    # We support two invocation modes:
-    # - If robot_cmd[0] endswith .jar, we call via java -Xmx{max_mem} -jar robot.jar ...
-    # - Else, we call the executable directly
-    if robot_cmd and robot_cmd[0].endswith(".jar"):
-        cmd = [
-            "java",
-            f"-Xmx{max_mem}",
-            "-jar",
-            robot_cmd[0],
-            "merge",
-            "--input",
-            base_ttl.as_posix(),
-            "--input",
-            add_ttl.as_posix(),
-            "reason",
-            "--reasoner",
-            "ELK",
-            "--output",
-            out_ttl.as_posix(),
-        ]
-    else:
-        cmd = [
-            robot_cmd[0],
-            "merge",
-            "--input",
-            base_ttl.as_posix(),
-            "--input",
-            add_ttl.as_posix(),
-            "reason",
-            "--reasoner",
-            "ELK",
-            "--output",
-            out_ttl.as_posix(),
-        ]
-    return cmd

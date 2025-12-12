@@ -3,6 +3,7 @@ import logging
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+
 config(logger)
 
 # def enrich(elem_iri: str, elem_label: str, elem_type: str, elem_definition: str, chains, prompts, phrase_diffs_dict, ref_entries, ref_labels,

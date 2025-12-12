@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -7,6 +6,8 @@ import pandas as pd
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 
@@ -62,3 +63,22 @@ def read_reference_entries(settings: dict) -> list[Any]:
         except Exception as e:
             logger.warning("Failed to load reference terms from %s: %s", reference_entries_file, e)
     return ref_entries
+
+
+def load_entries(csv_path: Path) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
+
+    # Normalize expected columns
+    for col in ("iri", "label", "definition", "type"):
+        if col not in df.columns:
+            df[col] = ""
+
+    # Clean
+    df["label"] = df["label"].astype(str).str.strip()
+    df["definition"] = df["definition"].astype(str).str.strip()
+    df["type"] = df["type"].astype(str).str.strip().str.lower().replace({"": "unknown"})
+    df["iri"] = df["iri"].astype(str).str.strip()
+
+    # Filter out empty labels/definitions
+    df = df[(df["label"] != "") & (df["definition"] != "")]
+    return df

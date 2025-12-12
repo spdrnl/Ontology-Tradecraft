@@ -9,6 +9,7 @@ from common.vectorization import vector_top_k
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+
 config(logger)
 
 
@@ -81,7 +82,6 @@ def create_class_definition_prompt(elem_iri: str,
                                    ref_entries,
                                    ref_labels,
                                    settings: dict) -> ChatPromptTemplate:
-
     system_prompt = prompts.get("class").get("system")
     user_prompt = prompts.get("class").get("user")
 

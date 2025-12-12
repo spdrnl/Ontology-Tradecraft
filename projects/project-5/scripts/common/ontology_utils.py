@@ -376,10 +376,196 @@ def get_turtle_snippet_by_uri_ref(
         if isinstance(o, BNode):
             add_bnode_closure(o)
 
+    # Fix bindings
+    namespaces = {
+        "cco": "https://www.commoncoreontologies.org/",
+        "bfo": "http://purl.obolibrary.org/obo/bfo#"
+    }
+    for k, v in namespaces.items():
+        sg.bind(k, v)
+
     data = sg.serialize(format="turtle")
     if isinstance(data, bytes):
         return data.decode("utf-8")
+
+    # Expand CURIEs in the Turtle snippet using string manipulation only
+    data = expand_curies(data, namespaces)
+
     return str(data)
+
+
+def expand_curies(ttl_snippet: str, namespaces: dict[str, str]) -> str:
+    """Expand CURIEs in a Turtle snippet to full IRIs using string manipulation only.
+
+    Parameters:
+    - ttl_snippet: A Turtle snippet that may use CURIEs (e.g., `ex:Foo a rdf:Class .`).
+    - namespaces: Mapping of prefix -> namespace IRI (e.g., `{ "ex": "http://example.com/", "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#" }`).
+
+    Returns:
+    - A Turtle string where CURIEs using the provided prefixes are replaced with
+      full IRIs in angle brackets, without using rdflib.
+
+    Notes and limitations:
+    - This is a conservative text-based replacement that avoids changing content
+      inside string literals, existing angle-bracket IRIs, comments, and @prefix lines.
+    - It handles typical QName local parts comprised of ASCII letters, digits,
+      underscore, dash, and dot. More advanced Turtle escapes in local names are
+      not supported by this simple expander.
+    - @prefix declarations are preserved (not removed), even if no CURIEs remain.
+    """
+    if not isinstance(ttl_snippet, str):
+        raise TypeError("ttl_snippet must be a string of Turtle content")
+    if not isinstance(namespaces, dict):
+        raise TypeError("namespaces must be a dict mapping prefix -> namespace IRI")
+
+    # Normalize and validate namespaces (simple checks)
+    ns: dict[str, str] = {}
+    for k, v in namespaces.items():
+        if not isinstance(k, str) or not k:
+            raise ValueError("Invalid namespace prefix provided")
+        if not isinstance(v, str) or not v:
+            raise ValueError(f"Invalid namespace IRI for prefix '{k}'")
+        ns[k] = v
+
+    s = ttl_snippet
+    n = len(s)
+    i = 0
+    out: list[str] = []
+
+    in_angle = False  # between < and >
+    in_comment = False  # after # to end of line (when not in string)
+    in_string = False
+    string_quote = ''  # ' or "
+    string_is_triple = False
+
+    # Track line starts to skip replacements on lines starting with @prefix
+    line_start = 0
+    skip_line_for_prefix = False
+
+    def is_delim(ch: str) -> bool:
+        return ch.isspace() or ch in '()[]{};,.=\t\r\n'
+
+    while i < n:
+        ch = s[i]
+
+        # Handle end of line bookkeeping
+        if ch == '\n':
+            out.append(ch)
+            in_comment = False
+            line_start = i + 1
+            skip_line_for_prefix = False
+            i += 1
+            continue
+
+        # Comments (only when not in string or angle IRI)
+        if not in_string and not in_angle and ch == '#':
+            in_comment = True
+        if in_comment:
+            out.append(ch)
+            i += 1
+            continue
+
+        # Angle-bracket IRI blocks
+        if not in_string and ch == '<':
+            in_angle = True
+        if in_angle:
+            out.append(ch)
+            if ch == '>':
+                in_angle = False
+            i += 1
+            continue
+
+        # String literals (support '...', "...", '''...''', """...""")
+        if not in_string and ch in ('\'', '"'):
+            # Check triple quote
+            q = ch
+            if i + 2 < n and s[i + 1] == q and s[i + 2] == q:
+                in_string = True
+                string_quote = q
+                string_is_triple = True
+                out.append(q + q + q)
+                i += 3
+                continue
+            else:
+                in_string = True
+                string_quote = q
+                string_is_triple = False
+                out.append(ch)
+                i += 1
+                continue
+        if in_string:
+            out.append(ch)
+            if ch == '\\':  # escape next char
+                if i + 1 < n:
+                    out.append(s[i + 1])
+                    i += 2
+                    continue
+            if string_is_triple:
+                if ch == string_quote and i + 2 < n and s[i + 1] == string_quote and s[i + 2] == string_quote:
+                    out.append(string_quote)
+                    out.append(string_quote)
+                    i += 3
+                    in_string = False
+                    string_is_triple = False
+                    string_quote = ''
+                else:
+                    i += 1
+                continue
+            else:
+                if ch == string_quote:
+                    in_string = False
+                    string_quote = ''
+                i += 1
+                continue
+
+        # At this point: not in string, not in angle, not in comment
+
+        # Detect if the current line starts with @prefix to skip replacements on this line
+        if not skip_line_for_prefix:
+            # read from current line_start to first non-space char
+            j = line_start
+            while j < n and s[j] in ' \t':
+                j += 1
+            if j < n and s.startswith('@prefix', j):
+                skip_line_for_prefix = True
+
+        if skip_line_for_prefix:
+            out.append(ch)
+            i += 1
+            continue
+
+        # Try to match a CURIE: prefix:local
+        # Conditions: prefix known, boundary before prefix, and a local part
+        if ch.isalpha():
+            # parse prefix
+            j = i + 1
+            while j < n and (s[j].isalnum() or s[j] in ['_', '-']):
+                j += 1
+            if j < n and s[j] == ':':
+                prefix = s[i:j]
+                if prefix in ns:
+                    # ensure left boundary
+                    prev = out[-1] if out else ''
+                    if i == 0 or is_delim(prev):
+                        # parse local part
+                        k = j + 1
+                        if k < n:
+                            # local: letters/digits/_ - .
+                            m = k
+                            while m < n and (s[m].isalnum() or s[m] in ['_', '-', '.']):
+                                m += 1
+                            if m > k:
+                                local = s[k:m]
+                                full = f"<{ns[prefix]}{local}>"
+                                out.append(full)
+                                i = m
+                                continue
+            # no match; fall through to append single char and advance
+        # default: just copy
+        out.append(ch)
+        i += 1
+
+    return ''.join(out)
 
 
 if __name__ == "__main__":

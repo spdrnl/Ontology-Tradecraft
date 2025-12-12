@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import Any, Dict
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -8,6 +7,8 @@ from langchain_ollama import ChatOllama
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 

@@ -49,28 +49,32 @@ Each student will:
    axioms in `generated/candidate_el.ttl`.
 4. Split `src/cco-module.ttl` into `src/train.ttl` (≈ 80%) and `src/valid.ttl` (≈ 20%), preserving all class and
    property declarations.
-  - Use:
-    `python3 projects/project-5/scripts/split_train_valid.py --input src/InformationEntityOntology.ttl --train src/train.ttl --valid src/valid.ttl --ratio 0.8 --seed 42`.
-  - The splitter keeps all owl:Class/ObjectProperty/DataProperty declarations in BOTH splits and partitions only simple
-    named-class rdfs:subClassOf axioms; this matches MOWL PathDataset expectations for training/evaluation.
+
+- Use:
+  `python3 projects/project-5/scripts/split_train_valid.py --input src/InformationEntityOntology.ttl --train src/train.ttl --valid src/valid.ttl --ratio 0.8 --seed 42`.
+- The splitter keeps all owl:Class/ObjectProperty/DataProperty declarations in BOTH splits and partitions only simple
+  named-class rdfs:subClassOf axioms; this matches MOWL PathDataset expectations for training/evaluation.
+
 5. Write `scripts/train_mowl.py` to train an ELEmbeddings model on `src/train.ttl`, evaluate on `src/valid.ttl`, and
    record results in `reports/mowl_metrics.json`; compute cosine similarity for held-out subclass–superclass pairs;
    choose the smallest threshold τ ∈ {0.60 – 0.80} achieving mean_cos ≥ 0.70.
-6. Implement `scripts/filter_candidates_hybrid.py` to score each (sub, super) pair by MOWL cosine similarity, query an
+6. Implement `scripts/filter.py` to score each (sub, super) pair by MOWL cosine similarity, query an
    LLM to rate semantic plausibility (0–1), then combine scores as a weighted average (e.g., 0.7 × cosine + 0.3 × LLM),
    returning a list of axioms meeting the threshold in `generated/accepted_el.ttl`.
 7. Merge `generated/accepted_el.ttl` with `src/cco-module.ttl` using ROBOT, reason with ELK, and save the final ontology
    as `src/module_augmented.ttl`.
 8. Write a single driver script `scripts/run_all.py` that executes the full pipeline:
-  - `extract_definitions.py` → `data/definitions.csv`
-  - `preprocess_definitions_llm.py` → `data/definitions_enriched.csv`
-  - `generate_candidates_llm.py` → `generated/candidate_el.ttl`
-  - Split axioms → `src/train.ttl`, `src/valid.ttl`
-  - `train_mowl.py` → `reports/mowl_metrics.json`
-  - `filter_candidates_hybrid.py` → `generated/accepted_el.ttl`
-  - Merge + reason → `src/module_augmented.ttl`
-    The script should print a concise report summarizing: mean_cos, chosen τ, number of accepted axioms, LLM
-    contribution rate, and consistency status.
+
+- `extract_definitions.py` → `data/definitions.csv`
+- `preprocess_definitions_llm.py` → `data/definitions_enriched.csv`
+- `generate_candidates_llm.py` → `generated/candidate_el.ttl`
+- Split axioms → `src/train.ttl`, `src/valid.ttl`
+- `train_mowl.py` → `reports/mowl_metrics.json`
+- `filter.py` → `generated/accepted_el.ttl`
+- Merge + reason → `src/module_augmented.ttl`
+  The script should print a concise report summarizing: mean_cos, chosen τ, number of accepted axioms, LLM
+  contribution rate, and consistency status.
+
 9. Submit the repository with all outputs so the main course repository.
 
 ## Ollama GPU selection (choose GPU 1)
@@ -122,7 +126,7 @@ and that `ollama serve` is running before executing the enrichment steps.
 - `scripts/generate_candidates_llm.py` — Generates EL-compliant candidate axioms from enriched definitions.
 - `scripts/train_mowl.py` — Trains ELEmbeddings on `src/train.ttl` and evaluates on `src/valid.ttl`.
 - `scripts/split_train_valid.py` — Deterministically splits an ontology into train/valid for MOWL PathDataset.
-- `scripts/filter_candidates_hybrid.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
+- `scripts/filter.py` — Combines MOWL cosine and LLM plausibility to keep axioms.
 - `scripts/run_all.py` — One-command driver that executes the entire pipeline end-to-end.
 
 ## How the embeddings are created (vector reference retrieval)
@@ -146,9 +150,11 @@ Creation (indexing) steps
 4) Normalization: model.encode(..., normalize_embeddings=True) so vectors are length-normalized.
 5) Dimensionality: taken from the model (fallback 384 if not reported).
 6) Storage: two Milvus Lite collections are created with an AUTOINDEX and COSINE metric:
-  - VECTOR_COLLECTION_CLASSES (default: ref_classes) for entries with type == "class"
-  - VECTOR_COLLECTION_PROPERTIES (default: ref_properties) for entries with type == "property"
-    Each collection stores fields: label (VARCHAR), definition (VARCHAR), vector (FLOAT_VECTOR[dim]).
+
+- VECTOR_COLLECTION_CLASSES (default: ref_classes) for entries with type == "class"
+- VECTOR_COLLECTION_PROPERTIES (default: ref_properties) for entries with type == "property"
+  Each collection stores fields: label (VARCHAR), definition (VARCHAR), vector (FLOAT_VECTOR[dim]).
+
 7) Insert and load: All vectors are inserted and the collections are loaded for querying.
 
 Querying during enrichment
@@ -173,12 +179,17 @@ Configuration
 Build and use
 
 1) Build (run once, or after bfo_cco_terms.csv changes):
-  - python scripts/build_vector_db.py
-  - Optionally set env vars above to customize location, collections, or model.
+
+- python scripts/build_vector_db.py
+- Optionally set env vars above to customize location, collections, or model.
+
 2) Enable vector retrieval for enrichment:
-  - REFERENCE_MODE=vector (e.g., set in .env)
+
+- REFERENCE_MODE=vector (e.g., set in .env)
+
 3) Run the enrichment as usual:
-  - python scripts/preprocess_definitions_llm.py
+
+- python scripts/preprocess_definitions_llm.py
 
 Notes
 

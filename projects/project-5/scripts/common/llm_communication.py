@@ -9,6 +9,7 @@ import requests
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+
 config(logger)
 
 

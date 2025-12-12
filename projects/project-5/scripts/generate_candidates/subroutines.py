@@ -1,13 +1,19 @@
 import argparse
 import io
+import logging
 import tempfile
-from pathlib import Path
 from typing import Any
 
 from rdflib import Graph
 
 from common.robot import detect_robot, build_elk_robot_command, run
 from common.vectorization import vector_top_k
+from util.logger_config import config
+
+logger = logging.getLogger(__name__)
+from pathlib import Path
+
+config(logger)
 
 prefixes = """
 @prefix cco: <https://www.commoncoreontologies.org/> .
@@ -24,21 +30,29 @@ prefixes = """
 
 def elk_check_axioms(all_axioms: Graph, args: argparse.Namespace, axiom_graph: Graph, robot_dir: Path) -> int:
     # TODO add CCO graph
-    test_graph = all_axioms + axiom_graph
-    robot_cmd = detect_robot(args.robot, robot_dir)
-    with tempfile.NamedTemporaryFile(suffix=".ttl") as in_path:
-        with tempfile.NamedTemporaryFile(suffix=".ttl") as out_path:
-            test_graph.serialize(format="turtle", destination=in_path.name)
-            cmd = build_elk_robot_command(Path(in_path.name), Path(out_path.name), robot_cmd, args.max_mem)
-            status = run(cmd)
+    status = 1
+    try:
+        test_graph = all_axioms + axiom_graph
+        robot_cmd = detect_robot(args.robot, robot_dir)
+        with tempfile.NamedTemporaryFile(suffix=".ttl") as in_path:
+            with tempfile.NamedTemporaryFile(suffix=".ttl") as out_path:
+                test_graph.serialize(format="turtle", destination=in_path.name)
+                cmd = build_elk_robot_command(Path(in_path.name), Path(out_path.name), robot_cmd, args.max_mem)
+                status = run(cmd)
+    except Exception as e:
+        logger.warning("ELK check failed: %s", e)
     return status
 
 
-def create_axiom_graph(axiom) -> Graph:
-    turtle = prefixes + "\n\n" + axiom
-    print(turtle)
-    axiom_graph = Graph()
-    axiom_graph.parse(io.StringIO(turtle), format="turtle")
+def parse_axiom(axiom) -> Graph:
+    axiom_graph = None
+    try:
+        turtle = prefixes + "\n\n" + axiom
+        print(turtle)
+        axiom_graph = Graph()
+        axiom_graph.parse(io.StringIO(turtle), format="turtle")
+    except Exception as e:
+        print(f"Failed to parse axiom: {axiom}")
     return axiom_graph
 
 

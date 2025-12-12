@@ -1,16 +1,13 @@
 import logging
-from pathlib import Path
 
 import dotenv
 import pandas as pd
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_ollama import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 from common.io import read_csv, write_df_to_csv, read_reference_entries
-from common.llm_communication import call_llm_over_http
 from common.ontology_utils import get_parent_by_label
-from common.prompt_loading import load_markdown_prompt_templates, build_prompts
+from common.prompt_loading import load_markdown_prompt_templates
 from common.settings import build_settings
 from common.string_normalization import remove_snake_case, apply_label_casing, apply_single_quotes
 from preprocess_definitions.definition_normalization import normalize_definition_prefix, create_class_definition_prompt, \
@@ -18,6 +15,8 @@ from preprocess_definitions.definition_normalization import normalize_definition
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 dotenv.load_dotenv()
@@ -44,7 +43,7 @@ def main():
     # Load prompt config file
     logger.info(f"Loading prompt templates from: {settings['prompt_cfg_file']}")
     prompts = load_markdown_prompt_templates(settings["prompt_cfg_file"])
-    #prompts, chains = build_prompts(llm, prompt_texts)
+    # prompts, chains = build_prompts(llm, prompt_texts)
 
     # Load BFO/CCO reference entries
     ref_entries = read_reference_entries(settings)
@@ -57,7 +56,7 @@ def main():
 
     # Set-up LLM communication
     llm = ChatOllama(
-        model=settings["model_name"],          # or "gemma3n:latest" or a specific tag
+        model=settings["model_name"],  # or "gemma3n:latest" or a specific tag
         temperature=settings["temperature"],
     )
 
@@ -67,7 +66,6 @@ def main():
     logger.info("Building and querying reference context per row...")
     df['status'] = 'PENDING'
     success = 0
-    url = "http://localhost:11434/api/generate"
 
     # Allow for retries
     for iter in range(10):
@@ -78,7 +76,7 @@ def main():
             status = r["status"]
             definition = r["definition"]
             type_name = r["type"]
-            improved_definition = r["definition"]
+            improved_definition = definition
 
             # Improve the definition if it has not already been improved
             if status != "OK":
@@ -90,29 +88,28 @@ def main():
 
                 if type_name == "class":
                     ollama_prompt = create_class_definition_prompt(iri,
-                                                            label,
-                                                            type_name,
-                                                            definition,
-                                                            automatic_definition,
-                                                            target_info,
-                                                            prompts,
-                                                            phrase_diffs_dict,
-                                                            ref_entries,
-                                                            ref_labels,
-                                                            settings)
+                                                                   label,
+                                                                   type_name,
+                                                                   definition,
+                                                                   automatic_definition,
+                                                                   target_info,
+                                                                   prompts,
+                                                                   phrase_diffs_dict,
+                                                                   ref_entries,
+                                                                   ref_labels,
+                                                                   settings)
                 else:
                     ollama_prompt = create_property_definition_prompt(iri,
-                                                               label,
-                                                               type_name,
-                                                               definition,
-                                                               automatic_definition,
-                                                               target_info,
-                                                               prompts,
-                                                               phrase_diffs_dict,
-                                                               ref_entries,
-                                                               ref_labels,
-                                                               settings)
-
+                                                                      label,
+                                                                      type_name,
+                                                                      definition,
+                                                                      automatic_definition,
+                                                                      target_info,
+                                                                      prompts,
+                                                                      phrase_diffs_dict,
+                                                                      ref_entries,
+                                                                      ref_labels,
+                                                                      settings)
 
                 print(f"Querying LLM for improved definition of {iri} ({label})...")
                 print(ollama_prompt)
@@ -156,15 +153,15 @@ def main():
                 improved_definition = apply_label_casing(improved_definition, ref_labels)
                 improved_definition = apply_single_quotes(improved_definition, ref_labels)
 
-                print("\n\n" + "#"*80)
+                print("\n\n" + "#" * 80)
                 print(f"{status} (Done {success} out of {len(df)} rows.)")
                 print(f"Definition: {definition}")
                 print(f"Improved definition: {improved_definition}")
-                print("#"*80 + "\n\n")
+                print("#" * 80 + "\n\n")
 
                 if status != "OK":
                     # Revert to original definition
-                    improved_definition = r["definition"]
+                    improved_definition = definition
 
             out_rows.append({
                 "iri": iri,
@@ -174,10 +171,10 @@ def main():
                 "definition": improved_definition
             })
 
-        out_df = pd.DataFrame(out_rows)
-        out_df = out_df[["iri", "label", "type", "status", "definition"]]
-        logger.info(f"Writing results CSV to: {settings['output_file']}")
-        write_df_to_csv(out_df, settings["output_file"])
+        df = pd.DataFrame(out_rows)
+        df = df[["iri", "label", "type", "status", "definition"]]
+        logger.info(f"Writing results CSV to: {settings['enriched_definitions']}")
+        write_df_to_csv(df, settings["enriched_definitions"])
         logger.info("Checking if all definitions are improved.")
         if (df["status"] == "OK").all():
             break

@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import Any, List
 
 import dotenv
@@ -16,6 +15,8 @@ from common.settings import build_settings
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
 config(logger)
 
 dotenv.load_dotenv()

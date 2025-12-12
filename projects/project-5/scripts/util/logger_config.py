@@ -1,6 +1,5 @@
 import logging
 
-
 def config(logger):
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()
