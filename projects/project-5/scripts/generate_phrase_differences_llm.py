@@ -3,6 +3,7 @@ from typing import Any, List
 
 import dotenv
 import pandas as pd
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
@@ -11,6 +12,7 @@ from common.ontology_utils import (
     get_parent_property_by_label,
     get_parent_class_by_label,
 )
+from common.prompt_loading import load_markdown_prompt_templates
 from common.settings import build_settings
 from util.logger_config import config
 
@@ -25,28 +27,6 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
 OUTPUT_FILE = DATA_ROOT / "phrase_differences.csv"
 
-# Separate prompts for properties (verb phrases) and classes (noun phrases)
-PROMPT_TEMPLATE_PROPERTY = (
-    "Describe the difference between the first verb phrase 'X' and the second verb phrase 'Y' in plain\n"
-    "English in a short phrase, use academic language. \n"
-    "Explicitly state the two phrases with single quote, and start the output with 'The difference is:'."
-    "Only output a short phrase, without explanations, considerations or other additional information.\n\n"
-)
-
-PROMPT_TEMPLATE_CLASS = (
-    "Describe the difference between the first noun phrase 'X' and the second noun phrase 'Y' in plain\n"
-    "English in a short phrase, use academic language. \n"
-    "Explicitly state the two phrases with single quote, and start the output with 'The difference is:'."
-    "Only output a short phrase, without explanations, considerations or other additional information.\n\n"
-)
-
-
-def _build_chain(llm: ChatOllama, template_text: str):
-    tmpl = ChatPromptTemplate.from_messages([
-        ("user", template_text),
-    ])
-    return tmpl, tmpl | llm
-
 
 def main():
     logger.info("===================================================================")
@@ -57,6 +37,11 @@ def main():
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
 
+    # Load prompt config file
+    prompt_texts_file = settings['generate_phrase_differences_llm_md']
+    logger.info(f"Loading prompt templates from: {prompt_texts_file}")
+    prompt_texts = load_markdown_prompt_templates(prompt_texts_file)
+
     # Read input CSV (definitions)
     input_csv = settings.get("input_file", DATA_ROOT / "definitions.csv")
     logger.info("Reading definitions from: %s", input_csv)
@@ -66,12 +51,8 @@ def main():
     logger.info("Initializing LLM with model: %s", settings["model_name"])
     llm = ChatOllama(model=settings["model_name"], temperature=settings["temperature"])
 
-    # Build two chains: one for properties and one for classes
-    prop_prompt_tmpl, prop_chain = _build_chain(llm, PROMPT_TEMPLATE_PROPERTY)
-    class_prompt_tmpl, class_chain = _build_chain(llm, PROMPT_TEMPLATE_CLASS)
-
     # TTL path for parent lookup
-    ttl_path = PROJECT_ROOT / "src" / "ConsolidatedCCO.ttl"
+    ttl_path = settings["reference_ontology"]
     if not ttl_path.exists():
         logger.warning("TTL file not found at %s; parent lookup will fail.", ttl_path)
 
@@ -88,9 +69,14 @@ def main():
             label = str(r.get("label", "") or "").strip()
             type_name = str(r.get("type", "") or "").strip().lower()
             status = str(r.get("status"))
+            definition = str(r.get("definition") or "").strip()
             parent_label = str(r.get("parent_label"))
             difference = str(r.get("difference"))
             raw = str(r.get("raw"))
+
+            # Only process classes and properties; skip others
+            if type_name not in {"property", "class"}:
+                continue
 
             if status == "OK":
                 out_rows.append({
@@ -104,13 +90,6 @@ def main():
                 })
                 continue
 
-            # Only process classes and properties; skip others
-            if type_name not in {"property", "class"}:
-                continue
-
-            parent_label = None
-            raw = ""
-
             try:
                 if type_name == "property":
                     info = get_parent_property_by_label(label, ttl_path)
@@ -119,30 +98,44 @@ def main():
                 parent_label = info.get("parent_label")
             except Exception as e:
                 logger.warning("Parent lookup failed for %s: %s", label, e)
-                status = "LOOKUP_FAIL"
+                status = "OK"
 
             if not parent_label:
                 status = "OK"
                 difference = ""
             else:
                 try:
-                    # Choose appropriate prompt and chain based on element type
-                    if type_name == "property":
-                        tmpl = prop_prompt_tmpl
-                    else:
-                        tmpl = class_prompt_tmpl
-
                     # Build prompt messages and inject labels for X and Y
-                    msgs = tmpl.format_messages()
-                    for m in msgs:
-                        if hasattr(m, "content"):
-                            m.content = m.content.replace("'X'", f"'{label}'").replace("'Y'", f"'{parent_label}'")
-                    resp = llm.invoke(msgs)
-                    raw = (getattr(resp, "content", "") or "").strip()
-                    difference = raw.strip().strip('"')
-                    if difference.startswith("The difference is:"):
+                    system_query = (prompt_texts[type_name]["system"]
+                                    .replace("{X}", label)
+                                    .replace("{Y}", parent_label)
+                                    )
+
+                    user_query = (prompt_texts[type_name]['user']
+                                  .replace("{X}", label)
+                                  .replace("{Y}", parent_label)
+                                  )
+
+                    ollama_prompt = ChatPromptTemplate.from_messages(
+                        [
+                            ("system", system_query),
+                            ("user", user_query),
+                        ]
+                    )
+
+                    logger.info(user_query)
+                    logger.info(system_query)
+
+                    # Invoke LLM
+                    chain = ollama_prompt | llm | JsonOutputParser()
+                    prompt_response = chain.invoke({})
+
+                    # Parse LLM response
+                    difference = prompt_response.get("difference", "")
+                    if "difference" in difference.lower() or 'while' in difference.lower():
                         status = "OK"
-                        difference = difference[len("The difference is:"):].strip()
+                        if difference.startswith("The difference is:"):
+                            difference = difference[len("The difference is:"):].strip()
                     else:
                         status = "NOK"
                 except Exception as e:
@@ -150,7 +143,8 @@ def main():
                     status = "NOK"
                     difference = ""
 
-            logger.info(f"Label '{label}' has difference '{difference}' (status={status}).")
+            logger.info(f"(status={status}) Label '{label}' has difference '{difference}'.")
+
             out_rows.append({
                 "iri": iri,
                 "label": label,

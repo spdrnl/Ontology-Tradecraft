@@ -1,9 +1,9 @@
 import logging
-import re
 
 import pandas as pd
 import rdflib
 
+from common.settings import build_settings
 from util.logger_config import config
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,8 @@ ONTOLOGIES_ROOT = PROJECT_ROOT / "src"
 BFO_CORE_FILE = ONTOLOGIES_ROOT / "bfo-core.ttl"
 CONSOLIDATED_CCO_MERGED_FILE = ONTOLOGIES_ROOT / "ConsolidatedCCO.ttl"
 OUTPUT_FILE = DATA_ROOT / "bfo_cco_terms.csv"
+
+settings = build_settings(PROJECT_ROOT, DATA_ROOT)
 
 
 def read_ttl(path):
@@ -78,38 +80,6 @@ def extract_definitions(g):
     return rows
 
 
-def capitalize_label(label: str) -> str:
-    if label is None:
-        return None
-    elif len(label) <= 2:
-        return label
-    else:
-        return " ".join([label.capitalize() for label in label.split(" ")])
-
-
-def snake_case_label(label: str) -> str:
-    """Convert a label to snake_case (for property labels).
-
-    - Lowercase
-    - Convert camelCase/PascalCase boundaries to underscores
-    - Replace any non-alphanumeric with underscores
-    - Collapse multiple underscores and trim
-    """
-    if label is None:
-        return None
-    # Insert underscore between camelCase boundaries: "isAbout" -> "is_About"
-    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", label)
-    # Replace non-alphanumeric with underscores
-    s = re.sub(r"[^A-Za-z0-9]+", "_", s)
-    # Lowercase
-    s = s.lower()
-    # Collapse multiple underscores
-    s = re.sub(r"_+", "_", s)
-    # Trim leading/trailing underscores
-    s = s.strip("_")
-    return s
-
-
 def rows_to_df(rows):
     return pd.DataFrame(rows, columns=["iri", "label", "definition", "type"])
 
@@ -120,20 +90,15 @@ def write_df_to_csv(df, OUTPUT_FILE):
 
 def main():
     logger.info("======================================================")
-    logger.info("Extracting labels and definitions from BFO and CCO")
+    logger.info("Extracting labels and definitions reference ontology")
     logger.info("======================================================")
-    logger.info(f"Reading {BFO_CORE_FILE} file...")
-    g = read_ttl(BFO_CORE_FILE)
     logger.info("Extracting labels and definitions...")
-    bfo_rows = rows_to_df(extract_definitions(g))
-    logger.info(f"Found {len(bfo_rows)} definitions.")
-    g = read_ttl(CONSOLIDATED_CCO_MERGED_FILE)
-    logger.info("Extracting labels and definitions...")
+    g = read_ttl(settings["reference_ontology"])
     cco_rows = rows_to_df(extract_definitions(g))
-    logger.info(f"Found {len(cco_rows)} definitions.")
+    logger.info(f"Found {len(cco_rows)} definitions in {settings['reference_ontology']}.")
 
     # Merge and select columns
-    df = pd.concat([bfo_rows, cco_rows])
+    df = pd.concat([cco_rows])
     # Keep label/definition for downstream scripts, and include new 'type' column
     df = df[["iri", "label", "definition", "type"]]
 

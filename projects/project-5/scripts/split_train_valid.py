@@ -217,7 +217,6 @@ def main() -> None:
     candidates_el.parse(settings["candidates_el"], format="turtle")
 
     # Collect EL-valid subclass axioms
-    input_ontology += candidates_el
     pairs = collect_el_subclass_axioms(input_ontology)
     logger.info("Found %d EL-valid subclass axioms (named or restrictions)", len(pairs))
 
@@ -250,6 +249,8 @@ def main() -> None:
         add_axiom(g_train, s_node, o_node)
     for s_node, o_node in valid_pairs:
         add_axiom(g_valid, s_node, o_node)
+
+    g_train += candidates_el
 
     # Ensure output directories exist
     train_path.parent.mkdir(parents=True, exist_ok=True)

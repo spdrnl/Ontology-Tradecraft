@@ -41,8 +41,8 @@ def main():
     logger.info(f"Initializing LLM with model: {settings['model_name']}")
 
     # Load prompt config file
-    logger.info(f"Loading prompt templates from: {settings['prompt_cfg_file']}")
-    prompts = load_markdown_prompt_templates(settings["prompt_cfg_file"])
+    logger.info(f"Loading prompt templates from: {settings['preprocess_definitions_llm_md']}")
+    prompts = load_markdown_prompt_templates(settings["preprocess_definitions_llm_md"])
     # prompts, chains = build_prompts(llm, prompt_texts)
 
     # Load BFO/CCO reference entries

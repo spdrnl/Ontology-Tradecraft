@@ -27,15 +27,16 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
 
     # Environment-driven parameters
     ref_top_k = int(os.getenv("REF_TOP_K", "5"))
-    reference_ontology = Path(os.getenv("REFERENCE_ONTOLOGY", PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl"))
+    reference_ontology = Path(os.getenv("REFERENCE_ONTOLOGY", PROJECT_ROOT / "src/CommonCoreOntologiesMergedReasoned.ttl"))
 
     # Ollama
     model_name = os.getenv("OLLAMA_MODEL", "gemma3n")
     temperature = float(os.getenv("OLLAMA_TEMPERATURE", "0.2"))
+    generate_phrase_differences_llm_md = Path("GENERATE_PHRASE_DIFFERENCES_LLM_MD", PROJECT_ROOT / "prompts/generate_phrase_differences_llm.md")
     candidates_prompt_cfg_file = Path(
-        os.getenv("CANDIDATES_PROMPT_CONFIG_FILE", "prompts/generate_candidates_prompts.md").strip())
-    prompt_cfg_file = Path(
-        os.getenv("DEFINITIONS_PROMPT_CONFIG_FILE", "prompts/preprocessing_definitions_prompts.md").strip())
+        os.getenv("CANDIDATES_PROMPT_CONFIG_FILE", PROJECT_ROOT / "prompts/generate_candidates_prompts.md"))
+    preprocess_definitions_llm_md = Path(
+        os.getenv("PREPROCESS_DEFINITIONS_LLM_MD", PROJECT_ROOT / "prompts/preprocess_definitions_llm.md"))
 
     # Vector DB / Embeddings (optional; used when REFERENCE_MODE=vector)
     vector_db_uri = os.getenv("VECTOR_DB_URI", str(DATA_ROOT / "milvus.db"))
@@ -55,7 +56,8 @@ def build_settings(PROJECT_ROOT, DATA_ROOT) -> dict:
         "bfo_cco_terms": bfo_cco_terms,
         "enriched_definitions": enriched_definitions_file,
         "ref_top_k": ref_top_k,
-        "prompt_cfg_file": prompt_cfg_file,
+        "preprocess_definitions_llm_md": preprocess_definitions_llm_md,
+        "generate_phrase_differences_llm_md": generate_phrase_differences_llm_md,
         "candidates_prompt_cfg_file": candidates_prompt_cfg_file,
         "model_name": model_name,
         "temperature": temperature,

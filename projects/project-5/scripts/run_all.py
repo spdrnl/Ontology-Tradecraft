@@ -1,6 +1,6 @@
 import logging
 
-import extract_definitions
+import extract_ieo_definitions
 import extract_reference_terms
 import filter_candidates_hybrid
 import generate_candidates_llm
@@ -30,36 +30,37 @@ def main():
     logger.info("Running all scripts")
     logger.info("=======================================")
 
-    # Do reasoning?
-    logger.info("Merging CCO with IEO...")
-    robot_merge.main()
+    # input_file = PROJECT_ROOT / "src/CommonCoreOntologiesMerged.ttl"
+    # output_file = settings["reference_ontology"]
+    # logger.info(f"Running ELK over {input_file}...")
+    # robot_elk.main(input_file, output_file)
 
-    logger.info("Extracting reference terms...")
-    extract_reference_terms.main()
+    # logger.info("Extracting reference terms...")
+    # extract_reference_terms.main()
 
-    logger.info("Extracting definitions...")
-    extract_definitions.main()
+    # logger.info("Extracting definitions...")
+    # extract_ieo_definitions.main()
 
-    logger.info("Generating phrase differences...")
+    # logger.info("Generating phrase differences...")
     generate_phrase_differences_llm.main()
 
-    logger.info("Preprocessing definitions...")
-    preprocess_definitions_llm.main()
-
-    logger.info("Generating candidates ...")
-    generate_candidates_llm.main()
-
-    logger.info("Training MOWL ...")
-    train_mowl.main()
-
-    logger.info("Filtering candidates ...")
-    filter_candidates_hybrid.main()
-
-    logger.info("Merging candidates ...")
-    robot_merge.main()
-
-    logger.info("Checking result with ELK ...")
-    robot_elk.main()
+    # logger.info("Preprocessing definitions...")
+    # preprocess_definitions_llm.main()
+    #
+    # logger.info("Generating candidates ...")
+    # generate_candidates_llm.main()
+    #
+    # logger.info("Training MOWL ...")
+    # train_mowl.main()
+    #
+    # logger.info("Filtering candidates ...")
+    # filter_candidates_hybrid.main()
+    #
+    # logger.info("Merging candidates ...")
+    # robot_merge.main()
+    #
+    # logger.info("Checking result with ELK ...")
+    # robot_elk.main()
 
 
 if __name__ == "__main__":
