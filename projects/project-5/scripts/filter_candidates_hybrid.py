@@ -44,7 +44,7 @@ def _parse_args(settings: dict) -> argparse.Namespace:
                    help="Path to training metrics JSON (for tau, hyperparams)")
     p.add_argument("--w-cos", type=float, default=0.7,
                    help="Weight for cosine in hybrid score (final = w*cos + (1-w)*plaus)")
-    p.add_argument("--tau", type=float, default=settings.get("tau"),
+    p.add_argument("--tau", type=float, default=None,
                    help="Override threshold tau; defaults to selected_tau from metrics or 0.7 if missing")
     p.add_argument("--limit", type=int, default=0, help="Optional max number of candidates to process (0 = all)")
     p.add_argument("--dry-run", action="store_true", help="Skip LLM calls; use cosine only for filtering")

@@ -3,22 +3,24 @@
 ### System
 
 ### User
-Describe the difference between the first noun phrase '{X}' and the second noun phrase '{Y}' in plain
-English in a short phrase, use academic language. 
-Explicitly state the two phrases with quotation.
-The description MUST contain the word 'difference' or 'while'.
-Only output a short phrase, without explanations, considerations or other additional information.
-Output ONLY json with the following keys: 'difference'.
+Instruction:
+- Create a description of the difference in meaning between the noun phrase '{X}' and the noun phrase '{Y}'.
+- Use plain English in a short phrase. 
+- Explicitly state the two phrases with quotation in the description. 
+- The description MUST start with the words "The difference between noun phrase '{X}' and noun phrase '{Y}' is ". 
+- The description MUST consist of a single sentence, without explanations, considerations or other additional information.
+- Output ONLY json with the following keys: 'description'.
 
 ## Property
 
 ### System
 
 ### User
-Describe the difference between the first verb phrase '{X}' and the second verb phrase '{Y}' in plain
-English in a short phrase, use academic language.
-Explicitly state the two phrases with quotation.
-The description MUST contain the word 'difference' or 'while'.
-Only output a short phrase, without explanations, considerations or other additional information.
-Output ONLY json with the following keys: 'difference'.
+Instruction:
+- Create a description of the difference in meaning between the verb phrase '{X}' and the verb phrase '{Y}'.
+- Use plain English in a short phrase.
+- Explicitly state the two phrases with quotation in the description.
+- The description MUST start with the words "The difference between verb phrase '{X}' and verb phrase '{Y}' is ".
+- The description MUST consist of a single sentence, without explanations, considerations or other additional information.
+- Output ONLY json with the following keys: 'description'.
 

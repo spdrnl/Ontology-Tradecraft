@@ -43,7 +43,7 @@ def main():
     prompt_texts = load_markdown_prompt_templates(prompt_texts_file)
 
     # Read input CSV (definitions)
-    input_csv = settings.get("input_file", DATA_ROOT / "definitions.csv")
+    input_csv = settings.get("definitions_csv", DATA_ROOT / "definitions.csv")
     logger.info("Reading definitions from: %s", input_csv)
     df = read_csv(input_csv)
 
@@ -126,16 +126,17 @@ def main():
                     logger.info(user_query)
                     logger.info(system_query)
 
-                    # Invoke LLM
-                    chain = ollama_prompt | llm | JsonOutputParser()
-                    prompt_response = chain.invoke({})
+                    try:
+                        # Invoke LLM
+                        chain = ollama_prompt | llm | JsonOutputParser()
+                        prompt_response = chain.invoke({})
+                    except Exception as e:
+                        logger.warning("LLM invocation failed for %s: %s", label, e)
 
                     # Parse LLM response
-                    difference = prompt_response.get("difference", "")
-                    if "difference" in difference.lower() or 'while' in difference.lower():
+                    difference = prompt_response.get("description", "")
+                    if difference.startswith("The difference between "):
                         status = "OK"
-                        if difference.startswith("The difference is:"):
-                            difference = difference[len("The difference is:"):].strip()
                     else:
                         status = "NOK"
                 except Exception as e:

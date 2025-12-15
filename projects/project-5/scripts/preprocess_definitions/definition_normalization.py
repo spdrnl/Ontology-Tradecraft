@@ -46,10 +46,10 @@ def create_automatic_property_definition(elem_label: str, phrase_diffs_dict, tar
         axiomatic_definition += f" {'and' if parent_label else ''} individual x is an instance of '{target_info.get('child_domain')}'"
     if target_info.get("child_range"):
         axiomatic_definition += f" {'and' if parent_label or child_domain else ''} individual y is an instance of '{target_info.get('child_range')}'"
-    if phrase_diffs_dict.get(elem_label) and str(phrase_diffs_dict[elem_label]) != "nan":
-        axiomatic_definition += f" {'and' if parent_label or child_domain or child_range else ''} {phrase_diffs_dict[elem_label]}"
-    else:
-        axiomatic_definition += ", such that no other axioms hold"
+    # if phrase_diffs_dict.get(elem_label) and str(phrase_diffs_dict[elem_label]) != "nan":
+    #     axiomatic_definition += f" {'and' if parent_label or child_domain or child_range else ''} {phrase_diffs_dict[elem_label]}"
+    # else:
+    #     axiomatic_definition += ", such that no other axioms hold"
     axiomatic_definition += "."
     return axiomatic_definition
 
@@ -57,9 +57,10 @@ def create_automatic_property_definition(elem_label: str, phrase_diffs_dict, tar
 def normalize_definition_prefix(improved_definition: str,
                                 type_name: str,
                                 automatic_definition: str) -> str:
-    automatic_definition = automatic_definition.split("such that")[0].strip()
-    improved_definition = improved_definition.split("such that")[1].strip()
-    improved_definition = f"{automatic_definition} such that {improved_definition}"
+    if "such that" in improved_definition:
+        automatic_definition = automatic_definition.strip('.').strip()
+        improved_definition = improved_definition.split("such that")[1].strip()
+        improved_definition = f"{automatic_definition}, such that {improved_definition}"
     return improved_definition
 
 

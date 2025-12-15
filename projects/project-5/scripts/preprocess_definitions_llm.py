@@ -34,8 +34,8 @@ def main():
     settings = build_settings(PROJECT_ROOT, DATA_ROOT)
 
     # Read input definitions CSV
-    logger.info(f"Reading definitions CSV from: {settings['input_file']}")
-    df = read_csv(settings["input_file"])
+    logger.info(f"Reading definitions CSV from: {settings['definitions_csv']}")
+    definitions_df = read_csv(settings["definitions_csv"])
 
     # Configure LLM (Ollama must be running: `ollama serve` and model pulled)
     logger.info(f"Initializing LLM with model: {settings['model_name']}")
@@ -64,13 +64,14 @@ def main():
     logger.info("Enriching definitions...")
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
     logger.info("Building and querying reference context per row...")
-    df['status'] = 'PENDING'
+    definitions_df['status'] = 'PENDING'
     success = 0
+    config(logger)
 
     # Allow for retries
     for iter in range(10):
         out_rows = []
-        for _, r in df.iterrows():
+        for _, r in definitions_df.iterrows():
             iri = r["iri"]
             label = r["label"]
             status = r["status"]
@@ -82,8 +83,9 @@ def main():
             if status != "OK":
                 if type_name not in {"class", "property"}:
                     logger.error(f"Skipping {iri} ({label}) of type {type_name} as it is not a class or property.")
+                    print(f"Skipping {iri} ({label}) of type {type_name} as it is not a class or property.")
 
-                target_info = get_parent_by_label(label, type_name, Path("src/ConsolidatedCCO.ttl"))
+                target_info = get_parent_by_label(label, type_name, settings["reference_ontology"])
                 automatic_definition = create_automatic_property_definition(label, phrase_diffs_dict, target_info)
 
                 if type_name == "class":
@@ -111,7 +113,9 @@ def main():
                                                                       ref_labels,
                                                                       settings)
 
+                logger.info(f"Querying LLM for improved definition of {iri} ({label})...")
                 print(f"Querying LLM for improved definition of {iri} ({label})...")
+                logger.info(ollama_prompt)
                 print(ollama_prompt)
                 chain = ollama_prompt | llm | JsonOutputParser()
                 prompt_response = chain.invoke({})
@@ -153,8 +157,14 @@ def main():
                 improved_definition = apply_label_casing(improved_definition, ref_labels)
                 improved_definition = apply_single_quotes(improved_definition, ref_labels)
 
+                logger.info("\n\n" + "#" * 80)
+                logger.info(f"{status} (Done {success} out of {len(definitions_df)} rows.)")
+                logger.info(f"Definition: {definition}")
+                logger.info(f"Improved definition: {improved_definition}")
+                logger.info("#" * 80 + "\n\n")
+
                 print("\n\n" + "#" * 80)
-                print(f"{status} (Done {success} out of {len(df)} rows.)")
+                print(f"{status} (Done {success} out of {len(definitions_df)} rows.)")
                 print(f"Definition: {definition}")
                 print(f"Improved definition: {improved_definition}")
                 print("#" * 80 + "\n\n")
@@ -171,12 +181,12 @@ def main():
                 "definition": improved_definition
             })
 
-        df = pd.DataFrame(out_rows)
-        df = df[["iri", "label", "type", "status", "definition"]]
+        definitions_df = pd.DataFrame(out_rows)
+        definitions_df = definitions_df[["iri", "label", "type", "status", "definition"]]
         logger.info(f"Writing results CSV to: {settings['enriched_definitions']}")
-        write_df_to_csv(df, settings["enriched_definitions"])
+        write_df_to_csv(definitions_df, settings["enriched_definitions"])
         logger.info("Checking if all definitions are improved.")
-        if (df["status"] == "OK").all():
+        if (definitions_df["status"] == "OK").all():
             break
 
     logger.info("Done.")

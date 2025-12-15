@@ -16,7 +16,7 @@ Using verb phrases and noun phrases from the definition in English that indicate
 
 # Instructions
 
-- Identify the phrases placed in single quotes in the section 'Definition in English'.
+- Identify the phrases placed in single quotes in the definition given in the section 'Definition in English'.
 - Your are looking for combinations of a verb phrase and a noun phrase.
 - Ignore VERB phrases that are not mentioned in the section 'Mapping of VERB phrases to URIREF for PROPERTIES'.
 - Ignore NOUN phrases that are not mentioned in the section 'Mapping of NOUN phrases to URIREF for CLASSES'.
@@ -34,11 +34,12 @@ Using verb phrases and noun phrases from the definition in English that indicate
   - 'Mapping of VERB phrases to URIREF for PROPERTIES'
   - 'Mapping of NOUN phrases to URIREF for CLASSES'.
 - Output ONLY json with the following fields:
-  - candidate_axioms: a list of candidate owl:Restriction axioms in Turtle format.
+  - candidate_axioms: a list of candidate owl:Restriction axiom elements in the format of:
+    - "class_uri": {target_uri_ref}, "verb_phrase_uri": {{insert URIREF of verb phrase}}, "noun_phrase_uri": {{insert URIREF of noun phrase}}
   - reasoning: text explaining why the owl:Restriction axioms were created.
 
 # Definition in English
-
+The definition is:
 {target_definition}
 
 # Mapping of VERB phrases to URIREF for PROPERTIES
@@ -80,7 +81,7 @@ Instructions for creating a new owl:Restriction:
 - ONLY create an owl:Restriction using owl:someValuesFrom.
 - ONLY create an owl:Restriction for the class {target_uri_ref} .
 
-This is the template for adding a owl:Restriction.
+This is the template for adding an owl:Restriction.
 
 ```turtle
 
@@ -107,7 +108,7 @@ An owl:Restriction allows you to better define a class by showing what different
 
 # Instructions
 
-- Identify the phrases placed in single quotes in the section 'Definition in English'.
+- Identify the phrases placed in single quotes in the definition given in the section 'Definition in English'.
 - Your are looking for combinations of a verb phrase and a noun phrase.
 - You can also identify phrases that are near those mentioned in the section 'Mapping of phrases to URIREF'.
 - Ignore phrases that are not mentioned in the section 'Mapping of phrases to URIREF'.
@@ -125,7 +126,7 @@ An owl:Restriction allows you to better define a class by showing what different
   - reasoning: text explaining why the owl:Restriction axioms were created.
 
 # Definition in English
-
+The definition is:
 {target_definition}
 
 # Mapping of phrases to URIREF

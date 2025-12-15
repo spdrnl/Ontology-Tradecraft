@@ -47,15 +47,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--valid", default=str(SRC_ROOT / "valid.ttl"), help="Path to validation ontology (TTL/OWL)")
     p.add_argument("--eval-scope", choices=["all", "validation", "train"], default="all",
                    help="Class universe exposed via dataset.evaluation_classes: all | validation | train")
-    p.add_argument("--epochs", type=int, default=50, help="Training epochs")
-    p.add_argument("--dim", type=int, default=200, help="Embedding dimension")
-    p.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    p.add_argument("--batch", type=int, default=1024, help="Batch size for trainer")
-    p.add_argument("--margin", type=float, default=1.0, help="Margin")
-    p.add_argument("--reg-norm", type=float, default=1.0, help="Regularization")
+    p.add_argument("--epochs", type=int, default=150, help="Training epochs")
+    p.add_argument("--dim", type=int, default=2, help="Embedding dimension")
+    p.add_argument("--lr", type=float, default=0.003, help="Learning rate")
+    p.add_argument("--batch", type=int, default=32, help="Batch size for trainer")
+    p.add_argument("--margin", type=float, default=2.5, help="Margin")
+    p.add_argument("--reg-norm", type=float, default=0.00013, help="Regularization")
 
-    p.add_argument("--optuna", action="store_true", help="Use Optuna to tune dim, lr, margin, and reg_norm")
-    p.add_argument("--trials", type=int, default=20, help="Number of Optuna trials to run when --optuna is set")
+    p.add_argument("--optuna", type=bool, default=False, help="Use Optuna to tune dim, lr, margin, and reg_norm")
+    p.add_argument("--trials", type=int, default=25, help="Number of Optuna trials to run when --optuna is set")
     p.add_argument("--study-name", type=str, default="mowl-elembeddings", help="Optuna study name")
     p.add_argument("--storage", type=str, default=None,
                    help="Optuna storage URL (e.g., sqlite:///optuna.db). If not set, use in-memory")
@@ -216,47 +216,72 @@ def _optuna_objective(dataset, base_args) -> optuna.trial.TrialCallable:
     return objective
 
 
-def main():
-    args = parse_args()
-    train_path = Path(args.train)
-    valid_path = Path(args.valid)
-    out_path = Path(args.out)
+def main(
+    train: str = str(SRC_ROOT / "train.ttl"),
+    valid: str = str(SRC_ROOT / "valid.ttl"),
+    eval_scope: str = "all",
+    epochs: int = 150,
+    dim: int = 2,
+    lr: float = 0.003,
+    batch: int = 32,
+    margin: float = 2.5,
+    reg_norm: float = 0.00013,
+    # Optuna controls
+    use_optuna: bool = False,
+    trials: int = 25,
+    study_name: str = "mowl-elembeddings",
+    storage: str | None = None,
+    out: str = str(REPORTS_ROOT / "mowl_metrics.json"),
+):
+    train_path = Path(train)
+    valid_path = Path(valid)
+    out_path = Path(out)
 
     logger.info("Train ontology: %s", train_path)
     logger.info("Valid ontology: %s", valid_path)
     logger.info("Output metrics: %s", out_path)
 
     # Prepare dataset
-    dataset = load_dataset(train_path, valid_path, args.eval_scope)
+    dataset = load_dataset(train_path, valid_path, eval_scope)
 
     # Determine hyperparameters to use (Optuna or single)
     final_reg_norm = None
     best_valid = None
     optuna_used = False
     optuna_summary = None
-    final_dim = args.dim
-    final_lr = args.lr
-    final_margin = args.margin
-    final_reg_norm = args.reg_norm
+    final_dim = dim
+    final_lr = lr
+    final_margin = margin
+    final_reg_norm = reg_norm
 
     # If Optuna is requested, run HPO; otherwise do a single run
-    if getattr(args, 'optuna', False):
+    if use_optuna:
         optuna_used = True
         # Create study
         try:
             study = optuna.create_study(
                 direction="minimize",
-                study_name=args.study_name,
-                storage=args.storage,
+                study_name=study_name,
+                storage=storage,
                 load_if_exists=True,
-            ) if args.storage else optuna.create_study(direction="minimize", study_name=args.study_name)
+            ) if storage else optuna.create_study(direction="minimize", study_name=study_name)
         except Exception as e:
             logger.warning("Failed to create persistent Optuna study (%s). Falling back to in-memory.", e)
-            study = optuna.create_study(direction="minimize", study_name=args.study_name)
+            study = optuna.create_study(direction="minimize", study_name=study_name)
 
-        objective = _optuna_objective(dataset, args)
-        logger.info("Starting Optuna optimization for %d trials...", args.trials)
-        study.optimize(objective, n_trials=args.trials, show_progress_bar=False)
+        class _ArgsShim:
+            # minimal object exposing attributes used by _optuna_objective
+            def __init__(self):
+                self.dim = dim
+                self.lr = lr
+                self.margin = margin
+                self.reg_norm = reg_norm
+                self.batch = batch
+                self.epochs = epochs
+
+        objective = _optuna_objective(dataset, _ArgsShim())
+        logger.info("Starting Optuna optimization for %d trials...", trials)
+        study.optimize(objective, n_trials=trials, show_progress_bar=False)
         best = study.best_trial
         best_params = best.params
         best_value = float(best.value) if best.value is not None else None
@@ -271,15 +296,15 @@ def main():
 
         # Re-instantiate model with selected hyperparameters
         selected_suffix = f"optuna.best.d{final_dim}.lr{final_lr:.2e}.m{final_margin:.2f}.r{final_reg_norm:.2e}"
-        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch,
+        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=batch,
                            reg_norm=final_reg_norm, model_suffix=selected_suffix)
         # Train the chosen configuration once more to ensure weights are present
-        train_model(model, dataset, epochs=args.epochs)
+        train_model(model, dataset, epochs=epochs)
 
         # Prepare Optuna summary for metrics
         optuna_summary = {
-            "study_name": getattr(args, 'study_name', None),
-            "storage": getattr(args, 'storage', None),
+            "study_name": study_name,
+            "storage": storage,
             "n_trials": len(study.trials),
             "best_params": best_params,
             "best_value": best_value,
@@ -287,9 +312,9 @@ def main():
 
     else:
         # Single run with default reg_norm=1.0
-        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=args.batch,
+        model = init_model(dataset, dim=final_dim, lr=final_lr, margin=final_margin, batch_size=batch,
                            reg_norm=final_reg_norm)
-        train_model(model, dataset, epochs=args.epochs)
+        train_model(model, dataset, epochs=epochs)
 
     # Evaluate cosine on validation subclass pairs using the selected/best model
     pairs = extract_valid_subclass_pairs(valid_path)
@@ -311,11 +336,11 @@ def main():
 
     metrics = {
         "model": "ELEmbeddings",
-        "epochs": args.epochs,
+        "epochs": epochs,
         "dim": final_dim,
         "lr": final_lr,
         "margin": final_margin,
-        "batch": args.batch,
+        "batch": batch,
         "reg_norm": final_reg_norm,
         "optuna_used": optuna_used,
         "optuna": optuna_summary,
@@ -335,4 +360,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(
+        train=args.train,
+        valid=args.valid,
+        eval_scope=args.eval_scope,
+        epochs=args.epochs,
+        dim=args.dim,
+        lr=args.lr,
+        batch=args.batch,
+        margin=args.margin,
+        reg_norm=args.reg_norm,
+        use_optuna=args.optuna,
+        trials=args.trials,
+        study_name=args.study_name,
+        storage=args.storage,
+        out=args.out,
+    )

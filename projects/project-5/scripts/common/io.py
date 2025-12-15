@@ -28,8 +28,6 @@ def read_reference_entries(settings: dict) -> list[Any]:
     - reference_mode: str, mode description for logging
     """
     reference_entries_file = settings["bfo_cco_terms"]
-    ref_max_chars = settings["ref_max_chars"]
-    reference_mode = settings["reference_mode"]
 
     ref_entries = []
     if reference_entries_file.exists():
@@ -52,13 +50,10 @@ def read_reference_entries(settings: dict) -> list[Any]:
                 f"- {e['label']}: {e['definition']}" for e in ref_entries
             ]
             full_reference_context = "\n".join(glossary_lines)
-            if len(full_reference_context) > ref_max_chars:
-                full_reference_context = full_reference_context[: ref_max_chars] + "\n…"
             logger.info(
-                "Loaded %d reference terms from %s (mode=%s)",
+                "Loaded %d reference terms from %s",
                 len(ref_entries),
-                reference_entries_file,
-                reference_mode,
+                reference_entries_file
             )
         except Exception as e:
             logger.warning("Failed to load reference terms from %s: %s", reference_entries_file, e)

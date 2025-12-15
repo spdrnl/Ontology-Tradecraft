@@ -41,6 +41,8 @@ from util.logger_config import config
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data"
+ONTOLOGIES_ROOT = PROJECT_ROOT / "src"
+IEO_FILE = ONTOLOGIES_ROOT / "InformationEntityOntology.ttl"
 
 logger = logging.getLogger(__name__)
 from pathlib import Path
@@ -200,6 +202,7 @@ def main() -> None:
 
     args = parse_args(settings)
     input_path = Path(args.input)
+    input_path = IEO_FILE
     train_path = Path(args.train)
     valid_path = Path(args.valid)
 

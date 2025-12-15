@@ -6,6 +6,7 @@ You are a precise ontology editor expert in BFO and CCO. Judge whether a candida
 semantically plausible in CCO style. The scoring rubric is given below.
 Only the candidate axiom is to be evaluated.
 Supporting definitions can be used for evaluation, but are not to be part of the scoring.
+Note that the ∃{prop_label}.{sup_label} OWL 2 EL subclass axioms has to apply to each individual of {sub_label} in order be accepted in the ontology.
 
 Return ONLY a compact JSON object with fields:
 

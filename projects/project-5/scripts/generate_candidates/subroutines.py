@@ -63,11 +63,11 @@ def add_candidates_from_other_words(other_words: list[str], ref_top_k: int, clas
     class_working_set = []
 
     for word in other_words:
-        property_vector_suggestions = vector_top_k(word, "property", ref_top_k, settings)
+        property_vector_suggestions = vector_top_k(word, "property", 3 * ref_top_k, settings)
         for suggestion in property_vector_suggestions:
             property_working_set.append(suggestion)
 
-        class_vector_suggestions = vector_top_k(word, "class", ref_top_k, settings)
+        class_vector_suggestions = vector_top_k(word, "class", 3 * ref_top_k, settings)
         for suggestion in class_vector_suggestions:
             class_working_set.append(suggestion)
 
@@ -83,9 +83,6 @@ def add_candidates_from_other_words(other_words: list[str], ref_top_k: int, clas
     for suggestion in class_working_set:
         class_candidates.append((suggestion["label"], suggestion["iri"]))
 
-    property_candidates = property_candidates[:ref_top_k]
-    class_candidates = class_candidates[:ref_top_k]
-    return class_candidates, property_candidates
 
 
 def add_candidates_from_labels(labels: set[str],
@@ -98,3 +95,5 @@ def add_candidates_from_labels(labels: set[str],
                 class_candidates.append((label, labels_to_iri[label]["iri"]))
             elif labels_to_iri[label]["type"] == "property":
                 property_candidates.append((label, labels_to_iri[label]["iri"]))
+
+    return class_candidates, property_candidates

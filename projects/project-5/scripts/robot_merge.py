@@ -35,7 +35,7 @@ def parse_args(settings) -> argparse.Namespace:
     p.add_argument(
         "--base",
         default=str(settings["reference_ontology"]),
-        help="Base ontology TTL to merge into (default: src/InformationEntityOntology.ttl)",
+        help=f"Base ontology TTL to merge into (default: {settings["reference_ontology"]})",
     )
     p.add_argument(
         "--add",
